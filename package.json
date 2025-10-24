@@ -1,0 +1,9 @@
+{
+  "name": "kidsweek-backend",
+  "version": "1.0.0",
+  "description": "Backend de l'application KidsWeek",
+  "main": "index.js",
+  "author": "KidsWeek's Team",
+  "license": "MIT",
+  "private": true
+}
