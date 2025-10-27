@@ -9,7 +9,7 @@ const bcrypt = require("bcrypt");
 //Signup
 
 router.post("/signup", (req, res) => {
-  if (!checkBody(req.body, ["firstName", "lastName", "email", "password"], {email: 'email'})) {
+  if (!checkBody(req.body, ["firstName", "lastName", "email", "password"], ['email'])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
@@ -24,6 +24,7 @@ router.post("/signup", (req, res) => {
         password: hash,
         token: uid2(32),
       });
+      
       newMember.save().then((data) => {
         const { firstName, lastName, email, token } = data
         res.json({ result: true, member: { firstName, lastName, email, token } });
@@ -37,7 +38,7 @@ router.post("/signup", (req, res) => {
 // Signin
 
 router.post("/signin", (req, res) => {
-  if (!checkBody(req.body, ["email", "password"], {email: 'email'})) {
+  if (!checkBody(req.body, ["email", "password"], ['email'])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
