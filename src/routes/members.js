@@ -9,28 +9,24 @@ const bcrypt = require("bcrypt");
 //Signup
 
 router.post("/signup", (req, res) => {
-  if (!checkBody(req.body, ["firstName", "lastName", "email"], ["Email"])) {
+  if (!checkBody(req.body, ["firstName", "lastName", "email", "password"], ["email"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
-  Member.findOne({ Email: req.body.email }).then((data) => {
+  const { firstName, lastName, email, password } = req.body
+  Member.findOne({ email }).then((data) => {
     if (data === null) {
-      const hash = bcrypt.hashSync(req.body.password, 10);
+      const hash = bcrypt.hashSync(password, 10);
       const newMember = new Member({
-        firstName: req.body.Firstname,
-        lastName: req.body.Lastname,
-        email: req.body.Email,
+        firstName,
+        lastName,
+        email,
         password: hash,
         token: uid2(32),
       });
-      newMember.save().then(() => {
-        const memberData = {
-          firstName: newMember.firstName,
-          lastName: newMember.lastName,
-          email: newMember.email,
-          token: newMember.token,
-        };
-        res.json({ result: true, member: memberData });
+      newMember.save().then((data) => {
+        const { firstName, lastName, email, token } = data
+        res.json({ result: true, member: { firstName, lastName, email, token } });
       });
     } else {
       res.json({ result: false, error: "L'utilisateur existe déjà" });
@@ -41,7 +37,7 @@ router.post("/signup", (req, res) => {
 // Signin
 
 router.post("/signin", (req, res) => {
-  if (!checkBody(req.body, ["email", "password"], ["Email"])) {
+  if (!checkBody(req.body, ["email", "password"], ["email"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
