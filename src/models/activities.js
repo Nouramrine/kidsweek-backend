@@ -2,39 +2,39 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const activitySchema = new Schema({
-  Name: {
+  name: {
     type: String,
     required: true,
   },
-  Place: String,
-  DateBegin: Date,
-  DateEnd: Date,
-  Reminder: String,
-  Note: String,
-  Description: String,
-  Validation: {
+  place: String,
+  dateBegin: Date,
+  dateEnd: Date,
+  reminder: String,
+  note: String,
+  description: String,
+  validation: {
     type: Boolean,
     default: false,
   },
 
-  TaskId: {
+  taskId: {
     type: Schema.Types.ObjectId,
     ref: "Tasks",
   },
 
-  Recurrence: {
+  recurrence: {
     type: Schema.Types.ObjectId,
     ref: "Recurrences",
   },
 
-  Members: [
+  members: [
     {
       type: Schema.Types.ObjectId,
       ref: "Members",
     },
   ],
 
-  Owner: {
+  owner: {
     type: Schema.Types.ObjectId,
     ref: "Members",
   },
