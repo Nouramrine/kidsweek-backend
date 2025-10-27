@@ -1,3 +1,5 @@
+dotenv.config();
+
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
@@ -5,7 +7,7 @@ const helmet = require("helmet");
 const connectDB = require("../config/db");
 //const userRoutes = require('./routes/userRoutes');
 const membersRouter = require("./routes/members");
-dotenv.config();
+const activitiesRouter = require("./routes/activities");
 
 // Connexion à la base de données
 connectDB();
@@ -18,13 +20,18 @@ app.use(cors());
 app.use(helmet());
 
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${res.statusCode} ${req.url} ${JSON.stringify(req.body)}`);
+  console.log(
+    `[${new Date().toISOString()}] ${req.method} ${res.statusCode} ${
+      req.url
+    } ${JSON.stringify(req.body)}`
+  );
   next();
 });
 
 // Routes
 //app.use('/users', userRoutes);
 app.use("/members", membersRouter);
+app.use("/activities", activitiesRouter);
 // Route par défaut
 app.get("/", (req, res) => {
   res.send("API is running...");
