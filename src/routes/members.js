@@ -25,7 +25,13 @@ router.post("/signup", (req, res) => {
         Token: uid2(32),
       });
       newMember.save().then(() => {
-        res.json({ result: true, Token: newMember.Token });
+        const memberData = {
+          Firstname: newMember.Firstname,
+          Lastname: newMember.Lastname,
+          Email: newMember.Email,
+          Token: newMember.Token,
+        };
+        res.json({ result: true, member: memberData });
       });
     } else {
       res.json({ result: false, error: "L'utilisateur existe déjà" });
@@ -44,7 +50,13 @@ router.post("/signin", (req, res) => {
     Email: req.body.Email,
   }).then((data) => {
     if (data && bcrypt.compareSync(req.body.Password, data.Password)) {
-      res.json({ result: true, Token: data.Token });
+      const memberData = {
+        Firstname: newMember.Firstname,
+        Lastname: newMember.Lastname,
+        Email: newMember.Email,
+        Token: newMember.Token,
+      };
+      res.json({ result: true, member: memberData });
     } else {
       res.json({ result: false, error: "Utilisateur introuvable" });
     }
@@ -59,7 +71,8 @@ router.get("/:email", async (req, res) => {
   try {
     const member = await Member.findOne({ Email: email });
     if (member) {
-      res.json({ result: true, member: member });
+      const { Password, ...memberData } = member.toObject();
+      res.json({ result: true, member: memberData });
     } else {
       res.json({ result: false, message: "Utilisateur introuvable" });
     }
