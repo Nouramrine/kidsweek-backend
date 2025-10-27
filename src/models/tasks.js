@@ -2,16 +2,16 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const taskSchema = new Schema({
-  Name: {
+  name: {
     type: String,
     required: true,
   },
-  IsOk: {
+  isOk: {
     type: Boolean,
     default: false,
   },
 
-  Activities: [
+  activities: [
     {
       type: Schema.Types.ObjectId,
       ref: "Activities",

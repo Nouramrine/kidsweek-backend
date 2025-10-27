@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const recurrenceSchema = new Schema({
-  DateDebut: Date,
-  DateFin: Date,
-  Day: String,
+  dateDebut: Date,
+  dateFin: Date,
+  day: String,
 });
 
 const Recurrence = mongoose.model("recurrences", recurrenceSchema);
