@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 
-require("../models/connection");
 const Member = require("../models/members");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
