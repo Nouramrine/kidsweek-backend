@@ -1,10 +1,10 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const helmet = require('helmet');
-const connectDB = require('../config/db');
+const express = require("express");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const helmet = require("helmet");
+const connectDB = require("../config/db");
 //const userRoutes = require('./routes/userRoutes');
-
+const membersRouter = require("./routes/members");
 dotenv.config();
 
 // Connexion à la base de données
@@ -19,15 +19,15 @@ app.use(helmet());
 
 // Routes
 //app.use('/users', userRoutes);
-
+app.use("/members", membersRouter);
 // Route par défaut
-app.get('/', (req, res) => {
-  res.send('API is running...');
+app.get("/", (req, res) => {
+  res.send("API is running...");
 });
 
 // Gestion des erreurs 404
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route non trouvée' });
+  res.status(404).json({ message: "Route non trouvée" });
 });
 
 const PORT = process.env.PORT || 5000;

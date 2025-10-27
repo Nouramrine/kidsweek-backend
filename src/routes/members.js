@@ -58,7 +58,7 @@ router.get("/:email", async (req, res) => {
   }
   try {
     const member = await Member.findOne({ Email: email });
-    if (email) {
+    if (member) {
       res.json({ result: true, member: member });
     } else {
       res.json({ result: false, message: "Utilisateur introuvable" });
@@ -67,3 +67,5 @@ router.get("/:email", async (req, res) => {
     res.json({ result: false, message: err.message });
   }
 });
+
+module.exports = router;
