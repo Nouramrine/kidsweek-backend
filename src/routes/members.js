@@ -9,26 +9,26 @@ const bcrypt = require("bcrypt");
 //Signup
 
 router.post("/signup", (req, res) => {
-  if (!checkBody(req.body, ["Firstname", "Lastname", "Email"], ["Email"])) {
+  if (!checkBody(req.body, ["firstName", "lastName", "email"], ["Email"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
-  Member.findOne({ Email: req.body.Email }).then((data) => {
+  Member.findOne({ Email: req.body.email }).then((data) => {
     if (data === null) {
-      const hash = bcrypt.hashSync(req.body.Password, 10);
+      const hash = bcrypt.hashSync(req.body.password, 10);
       const newMember = new Member({
-        Firstname: req.body.Firstname,
-        Lastname: req.body.Lastname,
-        Email: req.body.Email,
-        Password: hash,
-        Token: uid2(32),
+        firstName: req.body.Firstname,
+        lastName: req.body.Lastname,
+        email: req.body.Email,
+        password: hash,
+        token: uid2(32),
       });
       newMember.save().then(() => {
         const memberData = {
-          Firstname: newMember.Firstname,
-          Lastname: newMember.Lastname,
-          Email: newMember.Email,
-          Token: newMember.Token,
+          firstName: newMember.firstName,
+          lastName: newMember.lastName,
+          email: newMember.email,
+          token: newMember.token,
         };
         res.json({ result: true, member: memberData });
       });
@@ -41,19 +41,19 @@ router.post("/signup", (req, res) => {
 // Signin
 
 router.post("/signin", (req, res) => {
-  if (!checkBody(req.body, ["Email", "Password"], ["Email"])) {
+  if (!checkBody(req.body, ["email", "password"], ["Email"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
   Member.findOne({
-    Email: req.body.Email,
+    email: req.body.email,
   }).then((data) => {
-    if (data && bcrypt.compareSync(req.body.Password, data.Password)) {
+    if (data && bcrypt.compareSync(req.body.password, data.password)) {
       const memberData = {
-        Firstname: newMember.Firstname,
-        Lastname: newMember.Lastname,
-        Email: newMember.Email,
-        Token: newMember.Token,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        token: data.token,
       };
       res.json({ result: true, member: memberData });
     } else {
