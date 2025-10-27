@@ -17,6 +17,11 @@ app.use(express.json());
 app.use(cors());
 app.use(helmet());
 
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${res.statusCode} ${req.url} ${JSON.stringify(req.body)}`);
+  next();
+});
+
 // Routes
 //app.use('/users', userRoutes);
 app.use("/members", membersRouter);

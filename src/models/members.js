@@ -2,40 +2,20 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const memberSchema = new Schema({
-  Firstname: {
-    type: String,
-    required: true,
-  },
-  Token: String,
-  Lastname: {
-    type: String,
-    required: true,
-  },
-  Email: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  Birthday: Date,
-  Password: {
-    type: String,
-    required: true,
-  },
-  Address: String,
-  Number: String,
-  ZipCode: String,
-  City: String,
-  Authorization: Object,
-  Avatars: [String],
-  IsChildren: {
-    type: Boolean,
-    default: false,
-  },
-
-  Zone: {
-    type: Schema.Types.ObjectId,
-    ref: "Zones",
-  },
+  firstName: { type: String, required: true },
+  lastName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  birthday: Date,
+  password: { type: String, required: true },
+  address: String,
+  phoneNumber: String,
+  zipCode: String,
+  city: String,
+  authorization: [String],
+  avatar: String,
+  isChildren: { type: Boolean, default: false },
+  zone: { type: Schema.Types.ObjectId, ref: "Zones" },
+  token: String,
 });
 
 const Member = mongoose.model("members", memberSchema);

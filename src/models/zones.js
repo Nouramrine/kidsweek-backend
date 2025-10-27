@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const zoneSchema = new Schema({
-  Name: {
+  name: {
     type: String,
     required: true,
   },
-  Members: [
+  members: [
     {
       type: Schema.Types.ObjectId,
       ref: "Members",

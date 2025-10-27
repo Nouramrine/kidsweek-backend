@@ -9,28 +9,24 @@ const bcrypt = require("bcrypt");
 //Signup
 
 router.post("/signup", (req, res) => {
-  if (!checkBody(req.body, ["Firstname", "Lastname", "Email"], ["Email"])) {
+  if (!checkBody(req.body, ["firstName", "lastName", "email", "password"], {email: 'email'})) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
-  Member.findOne({ Email: req.body.Email }).then((data) => {
+  const { firstName, lastName, email, password } = req.body
+  Member.findOne({ email }).then((data) => {
     if (data === null) {
-      const hash = bcrypt.hashSync(req.body.Password, 10);
+      const hash = bcrypt.hashSync(password, 10);
       const newMember = new Member({
-        Firstname: req.body.Firstname,
-        Lastname: req.body.Lastname,
-        Email: req.body.Email,
-        Password: hash,
-        Token: uid2(32),
+        firstName,
+        lastName,
+        email,
+        password: hash,
+        token: uid2(32),
       });
-      newMember.save().then(() => {
-        const memberData = {
-          Firstname: newMember.Firstname,
-          Lastname: newMember.Lastname,
-          Email: newMember.Email,
-          Token: newMember.Token,
-        };
-        res.json({ result: true, member: memberData });
+      newMember.save().then((data) => {
+        const { firstName, lastName, email, token } = data
+        res.json({ result: true, member: { firstName, lastName, email, token } });
       });
     } else {
       res.json({ result: false, error: "L'utilisateur existe déjà" });
@@ -41,19 +37,19 @@ router.post("/signup", (req, res) => {
 // Signin
 
 router.post("/signin", (req, res) => {
-  if (!checkBody(req.body, ["Email", "Password"], ["Email"])) {
+  if (!checkBody(req.body, ["email", "password"], {email: 'email'})) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
   Member.findOne({
-    Email: req.body.Email,
+    email: req.body.email,
   }).then((data) => {
-    if (data && bcrypt.compareSync(req.body.Password, data.Password)) {
+    if (data && bcrypt.compareSync(req.body.password, data.password)) {
       const memberData = {
-        Firstname: newMember.Firstname,
-        Lastname: newMember.Lastname,
-        Email: newMember.Email,
-        Token: newMember.Token,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        token: data.token,
       };
       res.json({ result: true, member: memberData });
     } else {
