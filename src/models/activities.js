@@ -26,12 +26,12 @@ const activitySchema = new Schema({
   members: [
     {
       type: Schema.Types.ObjectId,
-      ref: "Members",
+      ref: "Member",
     },
   ],
   owner: {
     type: Schema.Types.ObjectId,
-    ref: "Members",
+    ref: "Member",
   },
 });
 
