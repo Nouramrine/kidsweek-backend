@@ -10,13 +10,6 @@ const taskSchema = new Schema({
     type: Boolean,
     default: false,
   },
-
-  activities: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Activities",
-    },
-  ],
 });
 
 const Task = mongoose.model("tasks", taskSchema);

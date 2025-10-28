@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Activity = require("../models/activities");
 const authMiddleware = require("../middleware/auth");
+const Task = require("../models/tasks");
 
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
@@ -79,6 +80,14 @@ router.post("/", authMiddleware, async (req, res) => {
       });
     }
 
+    // Preparer le tableau final des task ID
+    let finalTaskId = [];
+    if (taskIDs?.length) {
+      for (const id of taskIDs) {
+        finalTaskId.push(id);
+      }
+    }
+    // Creer la nouvelle activité
     const newActivity = new Activity({
       name,
       place: place || "",
@@ -87,7 +96,7 @@ router.post("/", authMiddleware, async (req, res) => {
       reminder: reminder || "",
       note: note || "",
       validation: false,
-      taskId: taskId || null,
+      taskId: finalTaskId,
       recurrence: recurrence || null,
       owner: req.member._id,
       members: members?.length ? members : [req.member._id],
