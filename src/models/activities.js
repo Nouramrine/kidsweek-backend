@@ -11,7 +11,6 @@ const activitySchema = new Schema({
   dateEnd: Date,
   reminder: String,
   note: String,
-  description: String,
   validation: {
     type: Boolean,
     default: false,

@@ -4,9 +4,9 @@ const { Schema } = mongoose;
 const memberSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, unique: true },
   birthday: Date,
-  password: { type: String, required: true },
+  password: String,
   address: String,
   phoneNumber: String,
   zipCode: String,
