@@ -68,7 +68,7 @@ router.post("/", authMiddleware, async (req, res) => {
       dateEnd,
       reminder,
       note,
-      taskId,
+      task,
       recurrence,
       members,
     } = req.body;
@@ -80,14 +80,24 @@ router.post("/", authMiddleware, async (req, res) => {
       });
     }
 
-    // Preparer le tableau final des task ID
-    let finalTaskId = [];
-    if (taskIDs?.length) {
-      for (const id of taskIDs) {
-        finalTaskId.push(id);
+    const ownerId = req.member._id;
+
+    // Gérer les tasks et stocker leurs IDs
+
+    let createdTaskIds = [];
+    if (Array.isArray(task) && task.length > 0) {
+      for (const t of task) {
+        if (!t.text) continue;
+        const newTask = new Task({
+          name: t.text,
+          isOk: t.checked || false,
+        });
+        const saved = await newTask.save();
+        createdTaskIds.push(saved._id);
       }
     }
-    // Creer la nouvelle activité
+
+    // Creer la nouvelle activité avec les taskIds
     const newActivity = new Activity({
       name,
       place: place || "",
@@ -96,10 +106,10 @@ router.post("/", authMiddleware, async (req, res) => {
       reminder: reminder || "",
       note: note || "",
       validation: false,
-      taskId: finalTaskId,
+      taskId: createdTaskIds,
       recurrence: recurrence || null,
-      owner: req.member._id,
-      members: members?.length ? members : [req.member._id],
+      owner: ownerId,
+      members: members?.length ? members : [ownerId],
     });
 
     const savedActivity = await newActivity.save();
@@ -114,7 +124,29 @@ router.post("/", authMiddleware, async (req, res) => {
     res.status(500).json({ result: false, message: err.message });
   }
 });
+// Recupérer les notifications de l'utilisateur
+router.get("/notifications", authMiddleware, async (req, res) => {
+  try {
+    const memberId = req.member._id;
 
+    const activities = await Activity.find({
+      members: memberId,
+      validation: false,
+    })
+      .populate("owner", "firstName lastName email")
+      .lean();
+
+    const reminders = await Activity.find({
+      owner: memberId,
+      reminder: { $ne: null },
+    }).lean();
+
+    res.json({ result: true, invitations: activities, reminders });
+  } catch (err) {
+    console.error("Erreur dans GET /activities/notifications :", err);
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
 //  Supprimer une activité
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
@@ -186,6 +218,40 @@ router.put("/:id", authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error("Erreur dans PUT /activities :", err);
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
+
+// Valider ou refuser une activité (depuis la notification)
+router.put("/:id/validate", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { validate } = req.body;
+    const memberId = req.member._id;
+
+    const activity = await Activity.findById(id);
+    if (!activity) {
+      return res
+        .status(404)
+        .json({ result: false, message: "Activité non trouvée." });
+    }
+    // Vérifier que le membre fait partie des participants
+    if (!activity.members.some((m) => m.toString() === memberId.toString())) {
+      return res.status(403).json({
+        result: false,
+        message: "Vous ne participez pas a cette activité",
+      });
+    }
+
+    activity.validation = validate;
+    await activity.save();
+
+    res.json({
+      result: true,
+      message: validate ? "Activité acceptée." : "Activité refusée.",
+    });
+  } catch (err) {
+    console.error("Erreur dans PUT /activities/:id/validate :", err);
     res.status(500).json({ result: false, message: err.message });
   }
 });
