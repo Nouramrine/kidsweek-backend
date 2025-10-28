@@ -1,10 +1,12 @@
-const express = require("express");
 const dotenv = require("dotenv");
 dotenv.config();
+
+const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const connectDB = require("../config/db");
 //const userRoutes = require('./routes/userRoutes');
+
 const membersRouter = require("./routes/members");
 const activitiesRouter = require("./routes/activities");
 
