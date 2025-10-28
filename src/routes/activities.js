@@ -1,24 +1,182 @@
 const express = require("express");
 const router = express.Router();
 const Activity = require("../models/activities");
-const Member = require("../models/members");
 const authMiddleware = require("../middleware/auth");
 
-//Récupérer les prochaines activités d'un membre
+// Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
     const now = new Date();
 
     const activities = await Activity.find({
-      members: memberId,
+      $or: [{ owner: memberId }, { members: memberId }],
       dateBegin: { $gte: now },
     })
-      .populate("members", "fistName lastName email")
-      .populate("owner", "fistName lastName email")
-      .sort({ dateBegin: 1 });
-    res.json({ result: true, activities });
+      .populate("members", "firstName lastName email")
+      .populate("owner", "firstName lastName email")
+      .sort({ dateBegin: 1 })
+      .lean();
+
+    if (!activities.length) {
+      return res.json({
+        result: true,
+        activities: [],
+        message: "Aucune activité à venir.",
+      });
+    }
+
+    const formatted = activities.map((a) => ({
+      _id: a._id,
+      name: a.name,
+      place: a.place || "",
+      dateBegin: a.dateBegin,
+      dateEnd: a.dateEnd,
+      reminder: a.reminder || "",
+      note: a.note || "",
+      validation: a.validation,
+      members: a.members.map((m) => ({
+        firstName: m.firstName,
+        lastName: m.lastName,
+        email: m.email,
+      })),
+      owner: {
+        firstName: a.owner?.firstName || "",
+        lastName: a.owner?.lastName || "",
+        email: a.owner?.email || "",
+      },
+    }));
+
+    res.json({ result: true, activities: formatted });
   } catch (err) {
+    console.error("Erreur dans GET /activities :", err);
+    res.status(500).json({
+      result: false,
+      message: "Erreur serveur lors de la récupération des activités.",
+    });
+  }
+});
+
+// Créer une nouvelle activité
+router.post("/", authMiddleware, async (req, res) => {
+  try {
+    const {
+      name,
+      place,
+      dateBegin,
+      dateEnd,
+      reminder,
+      note,
+      taskId,
+      recurrence,
+      members,
+    } = req.body;
+
+    if (!name || !dateBegin) {
+      return res.json({
+        result: false,
+        message: "Les champs obligatoires sont manquants (name, dateBegin).",
+      });
+    }
+
+    const newActivity = new Activity({
+      name,
+      place: place || "",
+      dateBegin: new Date(dateBegin),
+      dateEnd: dateEnd ? new Date(dateEnd) : null,
+      reminder: reminder || "",
+      note: note || "",
+      validation: false,
+      taskId: taskId || null,
+      recurrence: recurrence || null,
+      owner: req.member._id,
+      members: members?.length ? members : [req.member._id],
+    });
+
+    const savedActivity = await newActivity.save();
+
+    res.json({
+      result: true,
+      activity: savedActivity,
+      message: "Activité créée avec succès.",
+    });
+  } catch (err) {
+    console.error("Erreur dans POST /activities :", err);
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
+
+//  Supprimer une activité
+router.delete("/:id", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const memberId = req.member._id;
+
+    const activity = await Activity.findById(id);
+    if (!activity) {
+      return res
+        .status(404)
+        .json({ result: false, message: "Activité non trouvée." });
+    }
+
+    if (activity.owner.toString() !== memberId.toString()) {
+      return res
+        .status(403)
+        .json({ result: false, message: "Suppression non autorisée." });
+    }
+
+    await Activity.findByIdAndDelete(id);
+    res.json({ result: true, message: "Activité supprimée avec succès." });
+  } catch (err) {
+    console.error("Erreur dans DELETE /activities :", err);
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
+
+//  Modifier une activité
+router.put("/:id", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const memberId = req.member._id;
+
+    const activity = await Activity.findById(id);
+    if (!activity) {
+      return res
+        .status(404)
+        .json({ result: false, message: "Activité non trouvée." });
+    }
+
+    if (activity.owner.toString() !== memberId.toString()) {
+      return res
+        .status(403)
+        .json({ result: false, message: "Modification non autorisée." });
+    }
+
+    const updatableFields = [
+      "name",
+      "place",
+      "dateBegin",
+      "dateEnd",
+      "reminder",
+      "note",
+      "validation",
+      "taskId",
+      "recurrence",
+      "members",
+    ];
+
+    updatableFields.forEach((field) => {
+      if (req.body[field] !== undefined) activity[field] = req.body[field];
+    });
+
+    const updated = await activity.save();
+    res.json({
+      result: true,
+      activity: updated,
+      message: "Activité mise à jour avec succès.",
+    });
+  } catch (err) {
+    console.error("Erreur dans PUT /activities :", err);
     res.status(500).json({ result: false, message: err.message });
   }
 });
