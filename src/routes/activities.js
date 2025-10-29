@@ -3,7 +3,7 @@ const router = express.Router();
 const Activity = require("../models/activities");
 const authMiddleware = require("../middleware/auth");
 const Task = require("../models/tasks");
-
+const Recurrence = require("../models/recurrences");
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
   try {
@@ -97,17 +97,38 @@ router.post("/", authMiddleware, async (req, res) => {
       }
     }
 
-    // Creer la nouvelle activité avec les taskIds
+    let createdReccurenceId = "";
+    if (recurrence) {
+      const newRecurrence = new Recurrence({
+        dateDebut: dateBegin,
+        dateFin: dateEnd,
+        day: recurrence,
+      });
+      const saved = await newRecurrence.save();
+      createdReccurenceId = saved._id;
+    }
+    console.log(
+      place,
+      dateBegin,
+      dateEnd,
+      reminder,
+      note,
+      createdTaskIds,
+      createdReccurenceId,
+      ownerId,
+      members
+    );
+    // Creer la nouvelle activité avec les taskIds et recurrenceId
     const newActivity = new Activity({
       name,
       place: place || "",
       dateBegin: new Date(dateBegin),
       dateEnd: dateEnd ? new Date(dateEnd) : null,
-      reminder: reminder || "",
+      reminder: reminder ? new Date(reminder) : null,
       note: note || "",
       validation: false,
       taskId: createdTaskIds,
-      recurrence: recurrence || null,
+      recurrence: createdReccurenceId || null,
       owner: ownerId,
       members: members?.length ? members : [ownerId],
     });
