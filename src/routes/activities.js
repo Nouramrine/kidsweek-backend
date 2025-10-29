@@ -50,10 +50,10 @@ router.get("/", authMiddleware, async (req, res) => {
 
     res.json({ result: true, activities: formatted });
   } catch (err) {
-    console.error("Erreur dans GET /activities :", err);
+    console.error("Erreur dans GET /activities :", err.stack);
     res.status(500).json({
       result: false,
-      message: "Erreur serveur lors de la récupération des activités.",
+      message: err.message,
     });
   }
 });
