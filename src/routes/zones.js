@@ -3,6 +3,19 @@ const router = express.Router();
 const Zone = require("../models/zones");
 const authMiddleware = require("../middleware/auth");
 
+//Récupérer toutes les zones du membre connecté
+router.get("/", authMiddleware, async (req, res) => {
+  try {
+    const memberId = req.member._id;
+
+    const zones = await Zone.find({ members: memberId }).populate("members");
+
+    res.json({ result: true, zones });
+  } catch (err) {
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
+
 // Creéer une nouvelle zone
 
 router.post("/", authMiddleware, async (req, res) => {
