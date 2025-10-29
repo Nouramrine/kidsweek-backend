@@ -9,6 +9,7 @@ const connectDB = require("../config/db");
 
 const membersRouter = require("./routes/members");
 const activitiesRouter = require("./routes/activities");
+const zonesRouter = require("./routes/zones");
 
 // Connexion à la base de données
 connectDB();
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 //app.use('/users', userRoutes);
 app.use("/members", membersRouter);
 app.use("/activities", activitiesRouter);
+app.use("/zones", zonesRouter);
 // Route par défaut
 app.get("/", (req, res) => {
   res.send("API is running...");
