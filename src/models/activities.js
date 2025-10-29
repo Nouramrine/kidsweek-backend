@@ -9,7 +9,7 @@ const activitySchema = new Schema({
   place: String,
   dateBegin: Date,
   dateEnd: Date,
-  reminder: String,
+  reminder: Date,
   note: String,
   validation: {
     type: Boolean,
