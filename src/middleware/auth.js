@@ -2,12 +2,17 @@ const Member = require("../models/members");
 
 async function authMiddleware(req, res, next) {
   try {
-    const token = req.headers["authorization"];
+    let token = req.headers["authorization"];
     if (!token) {
       return res
         .status(401)
         .json({ result: false, message: "Token manquant !" });
     }
+    // Retire le préfixe "Bearer " si présent
+    if (token.startsWith("Bearer ")) {
+      token = token.slice(7).trim();
+    }
+
     //recherche du membre correspondant au token
     const member = await Member.findOne({ token: token });
     if (!member) {
