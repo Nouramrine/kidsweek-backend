@@ -28,12 +28,11 @@ router.post("/", authMiddleware, async (req, res) => {
 
 // Modifier une zone
 
-router.put("/:zoneId", authMiddleware, async (req, res) => {
+router.put("/", authMiddleware, async (req, res) => {
   try {
-    const { zoneId } = req.params;
-    const { name } = req.body;
+    const { id, name } = req.body;
 
-    const zone = await Zone.findById(zoneId);
+    const zone = await Zone.findById(id);
     if (!zone) {
       return res
         .status(404)
