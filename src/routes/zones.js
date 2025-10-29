@@ -6,10 +6,10 @@ const authMiddleware = require("../middleware/auth");
 //Récupérer toutes les zones du membre connecté
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const memberId = req.member._id;
-
-    const zones = await Zone.find({ members: memberId }).populate("members");
-
+    const authHeader = req.headers.authorization;
+    const token = authHeader.split(" ")[1] // Récup du token utilisateur
+        
+    const zones = await Zone.find().lean();
     res.json({ result: true, zones });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
@@ -20,20 +20,22 @@ router.get("/", authMiddleware, async (req, res) => {
 
 router.post("/", authMiddleware, async (req, res) => {
   try {
-    const { name, members } = req.body;
+    const { name, color, members } = req.body;
     if (!name) {
-      return res
-        .status(400)
-        .json({ result: false, message: "Le nom de la zone est requis." });
+      return res.status(400).json({ result: false, message: "Le nom de la zone est requis." });
+    }
+    if (!color) {
+      return res.status(400).json({ result: false, message: "La couleur est requise." });
     }
 
     const zone = new Zone({
       name,
+      color: color,
       members: members || [],
     });
 
     await zone.save();
-    res.status(201).json({ result: true, message: "Zone créée.", zone });
+    res.json({ result: true, zone });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
   }
@@ -41,11 +43,12 @@ router.post("/", authMiddleware, async (req, res) => {
 
 // Modifier une zone
 
-router.put("/", authMiddleware, async (req, res) => {
+router.put("/:zoneId", authMiddleware, async (req, res) => {
   try {
-    const { id, name } = req.body;
+    const { zoneId } = req.params;
+    const { name } = req.body;
 
-    const zone = await Zone.findById(id);
+    const zone = await Zone.findById(zoneId);
     if (!zone) {
       return res
         .status(404)

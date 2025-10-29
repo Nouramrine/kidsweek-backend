@@ -2,16 +2,10 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const zoneSchema = new Schema({
-  name: {
-    type: String,
-    required: true,
-  },
-  members: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "Members",
-    },
-  ],
+  name: { type: String, required: true },
+  color: { type: String },
+  owner: { type: Schema.Types.ObjectId, ref: "Members" },
+  members: [{ type: Schema.Types.ObjectId, ref: "Members" }]
 });
 
 const Zone = mongoose.model("zones", zoneSchema);
