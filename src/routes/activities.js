@@ -4,6 +4,7 @@ const Activity = require("../models/activities");
 const authMiddleware = require("../middleware/auth");
 const Task = require("../models/tasks");
 const Recurrence = require("../models/recurrences");
+const Member = require("../models/member");
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
   try {
