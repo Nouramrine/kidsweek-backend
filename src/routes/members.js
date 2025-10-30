@@ -70,7 +70,6 @@ router.get("/", authMiddleware, async (req, res) => {
       },
       { $replaceRoot: { newRoot: "$doc" } }
     ]);
-    console.log(members)
     res.json({ result: true, members });
   } catch (err) {
     res.json({ result: false, message: err.message });

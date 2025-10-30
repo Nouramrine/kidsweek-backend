@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Zone = require("../models/zones");
+const Member = require("../models/members");
 const authMiddleware = require("../middleware/auth");
 const mongoose = require("mongoose");
 
@@ -8,10 +9,14 @@ const mongoose = require("mongoose");
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
-    const zones = await Zone.find({
+    let zones = await Zone.find({
       $or: [{ owner: memberId }, { members: memberId }]
     }).populate('members', "firstName lastName").lean();
-    //console.log(zones)
+    // Ajout des droits
+    zones = zones.map((zone) => {
+      console.log(zone.owner);
+      return { ...zone, isReadOnly: zone.owner.equals(memberId) ? false : true }
+    })
     res.json({ result: true, zones });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
@@ -38,11 +43,19 @@ router.post("/", authMiddleware, async (req, res) => {
     const zone = new Zone({
       name,
       color: color,
+      owner: memberId,
       members: members || [],
     });
     await zone.save();
-    console.log(zone)
-    res.json({ result: true, zone });
+
+    // Renvoi de la zone avec populate
+    const populatedZone = await Zone.findById(zone._id)
+      .populate("members", "firstName lastName")
+      .lean();
+
+    populatedZone.isReadOnly = zone.owner.equals(memberId) ? false : true;
+
+    res.json({ result: true, zone: populatedZone });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
   }
