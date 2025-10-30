@@ -25,15 +25,15 @@ const activitySchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "recurrences",
   },
-  members: [
+  member: [
     {
       type: Schema.Types.ObjectId,
-      ref: "member",
+      ref: "members",
     },
   ],
   owner: {
     type: Schema.Types.ObjectId,
-    ref: "member",
+    ref: "members",
   },
 });
 

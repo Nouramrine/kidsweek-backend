@@ -4,7 +4,7 @@ const Activity = require("../models/activities");
 const authMiddleware = require("../middleware/auth");
 const Task = require("../models/tasks");
 const Recurrence = require("../models/recurrences");
-const Member = require("../models/member");
+
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
   try {
@@ -15,7 +15,7 @@ router.get("/", authMiddleware, async (req, res) => {
       $or: [{ owner: memberId }, { members: memberId }],
       dateBegin: { $gte: now },
     })
-      .populate("members", "firstName lastName email")
+      .populate("member", "firstName lastName email")
       .populate("owner", "firstName lastName email")
       .populate("taskId", "name isOk")
       .populate("recurrence", "dateDebut dateFin day")
@@ -133,7 +133,7 @@ router.post("/", authMiddleware, async (req, res) => {
       taskId: createdTaskIds,
       recurrence: createdReccurenceId || null,
       owner: ownerId,
-      members: members?.length ? members : [ownerId],
+      member: members?.length ? members : [ownerId],
     });
 
     const savedActivity = await newActivity.save();
