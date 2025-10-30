@@ -15,7 +15,7 @@ const activitySchema = new Schema({
     type: Boolean,
     default: false,
   },
-  taskId: [
+  taskIds: [
     {
       type: Schema.Types.ObjectId,
       ref: "tasks",
@@ -25,7 +25,7 @@ const activitySchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "recurrences",
   },
-  member: [
+  members: [
     {
       type: Schema.Types.ObjectId,
       ref: "members",
