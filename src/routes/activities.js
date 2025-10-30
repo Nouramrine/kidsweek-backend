@@ -49,6 +49,18 @@ router.get("/", authMiddleware, async (req, res) => {
         lastName: a.owner?.lastName || "",
         email: a.owner?.email || "",
       },
+      tasks:
+        a.taskIds?.map((t) => ({
+          name: t.name,
+          isOk: t.isOk,
+        })) || [],
+      recurrence: a.recurrence
+        ? {
+            dateDebut: a.recurrence.dateDebut,
+            dateFin: a.recurrence.dateFin,
+            day: a.recurrence.day,
+          }
+        : null,
     }));
 
     res.json({ result: true, activities: formatted });
