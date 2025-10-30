@@ -6,6 +6,25 @@ const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 
+// Add member
+
+router.post("/", (req, res) => {
+  if (!checkBody(req.body, ["firstName", "lastName", "isChildren"])) {
+    res.json({ result: false, error: "Champs manquants ou vides" });
+    return;
+  }
+  const { firstName, lastName, isChildren } = req.body
+  const newMember = new Member({
+    firstName,
+    lastName,
+    isChildren,
+  });
+  newMember.save().then((data) => {
+    const { firstName, lastName, isChildren } = data
+    res.json({ result: true, member: { firstName, lastName, isChildren } });
+  });
+});
+
 //Signup
 
 router.post("/signup", (req, res) => {
