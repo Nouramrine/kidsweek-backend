@@ -48,7 +48,7 @@ router.post("/", authMiddleware, async (req, res) => {
 router.put("/:zoneId", authMiddleware, async (req, res) => {
   try {
     const { zoneId } = req.params;
-    const { name } = req.body;
+    const { name, color } = req.body;
 
     const zone = await Zone.findById(zoneId);
     if (!zone) {
@@ -57,6 +57,7 @@ router.put("/:zoneId", authMiddleware, async (req, res) => {
         .json({ result: false, message: "Zone non trouvée." });
     }
     if (name) zone.name = name;
+    if (color) zone.color = color;
 
     await zone.save();
     res.json({ result: true, message: "Zone mise à jour.", zone });
