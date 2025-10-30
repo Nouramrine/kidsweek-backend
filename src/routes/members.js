@@ -23,8 +23,7 @@ router.post("/", authMiddleware, (req, res) => {
     creator : memberId,
   });
   newMember.save().then((data) => {
-    const { firstName, lastName, isChildren } = data
-    res.json({ result: true, member: { firstName, lastName, isChildren } });
+    res.json({ result: true, member: data });
   });
 });
 

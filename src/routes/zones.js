@@ -50,7 +50,7 @@ router.post("/", authMiddleware, async (req, res) => {
 
     // Renvoi de la zone avec populate
     const populatedZone = await Zone.findById(zone._id)
-      .populate("members", "firstName lastName")
+      .populate("members")
       .lean();
 
     populatedZone.isReadOnly = zone.owner.equals(memberId) ? false : true;
@@ -123,7 +123,15 @@ router.put("/:zoneId/add-member", authMiddleware, async (req, res) => {
       zone.members.push(memberId);
       await zone.save();
     }
-    res.json({ result: true, message: "Membre ajouté à la zone.", zone });
+
+    // Renvoi de la zone avec populate
+    const populatedZone = await Zone.findById(zone._id)
+      .populate("members")
+      .lean();
+
+    populatedZone.isReadOnly = zone.owner.equals(memberId) ? false : true;
+
+    res.json({ result: true, zone: populatedZone });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
   }
