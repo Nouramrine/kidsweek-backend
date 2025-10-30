@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const memberSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  email: { type: String, unique: true },
+  email: { type: String },
   birthday: Date,
   password: String,
   address: String,
@@ -15,8 +15,9 @@ const memberSchema = new Schema({
   avatar: String,
   isChildren: { type: Boolean, default: false },
   zone: { type: Schema.Types.ObjectId, ref: "zones" },
+  creator: { type: Schema.Types.ObjectId, ref: "members" },
   token: String,
-});
+}, { isTimeStamp: true });
 
 const Member = mongoose.model("members", memberSchema);
 module.exports = Member;
