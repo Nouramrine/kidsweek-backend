@@ -16,8 +16,7 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Creéer une nouvelle zone
-
+// Créer une nouvelle zone
 router.post("/", authMiddleware, async (req, res) => {
   try {
     const { name, color, members } = req.body;
@@ -33,7 +32,6 @@ router.post("/", authMiddleware, async (req, res) => {
       color: color,
       members: members || [],
     });
-
     await zone.save();
     res.json({ result: true, zone });
   } catch (err) {

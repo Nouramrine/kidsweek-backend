@@ -3,7 +3,7 @@ const { Schema } = mongoose;
 
 const zoneSchema = new Schema({
   name: { type: String, required: true },
-  color: { type: String },
+  color: { type: String }, 
   owner: { type: Schema.Types.ObjectId, ref: "Members" },
   members: [{ type: Schema.Types.ObjectId, ref: "Members" }]
 });
