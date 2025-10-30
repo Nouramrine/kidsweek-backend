@@ -15,9 +15,9 @@ router.get("/", authMiddleware, async (req, res) => {
       $or: [{ owner: memberId }, { members: memberId }],
       dateBegin: { $gte: now },
     })
-      .populate("member", "firstName lastName email")
+      .populate("members", "firstName lastName email")
       .populate("owner", "firstName lastName email")
-      .populate("taskId", "name isOk")
+      .populate("taskIds", "name isOk")
       .populate("recurrence", "dateDebut dateFin day")
       .sort({ dateBegin: 1 })
       .lean();
@@ -130,10 +130,10 @@ router.post("/", authMiddleware, async (req, res) => {
       reminder: reminder ? new Date(reminder) : null,
       note: note || "",
       validation: false,
-      taskId: createdTaskIds,
+      taskIds: createdTaskIds,
       recurrence: createdReccurenceId || null,
       owner: ownerId,
-      member: members?.length ? members : [ownerId],
+      members: members?.length ? members : [ownerId],
     });
 
     const savedActivity = await newActivity.save();
