@@ -18,22 +18,22 @@ const activitySchema = new Schema({
   taskId: [
     {
       type: Schema.Types.ObjectId,
-      ref: "Tasks",
+      ref: "tasks",
     },
   ],
   recurrence: {
     type: Schema.Types.ObjectId,
-    ref: "Recurrences",
+    ref: "recurrences",
   },
   members: [
     {
       type: Schema.Types.ObjectId,
-      ref: "Member",
+      ref: "member",
     },
   ],
   owner: {
     type: Schema.Types.ObjectId,
-    ref: "Member",
+    ref: "member",
   },
 });
 

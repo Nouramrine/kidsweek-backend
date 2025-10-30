@@ -16,11 +16,11 @@ router.get("/", authMiddleware, async (req, res) => {
     })
       .populate("members", "firstName lastName email")
       .populate("owner", "firstName lastName email")
-      .populate("taskId")
-      .populate("recurrence")
+      .populate("taskId", "name isOk")
+      .populate("recurrence", "dateDebut dateFin day")
       .sort({ dateBegin: 1 })
       .lean();
-
+    console.log("Activities fetched for member:", memberId, activities);
     if (!activities.length) {
       return res.json({
         result: true,
