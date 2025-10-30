@@ -16,6 +16,8 @@ router.get("/", authMiddleware, async (req, res) => {
     })
       .populate("members", "firstName lastName email")
       .populate("owner", "firstName lastName email")
+      .populate("taskId")
+      .populate("recurrence")
       .sort({ dateBegin: 1 })
       .lean();
 
@@ -50,10 +52,10 @@ router.get("/", authMiddleware, async (req, res) => {
 
     res.json({ result: true, activities: formatted });
   } catch (err) {
-    console.error("Erreur dans GET /activities :", err.stack);
+    console.error("Erreur dans GET /activities :", err);
     res.status(500).json({
       result: false,
-      message: err.message,
+      message: "Erreur serveur lors de la récupération des activités.",
     });
   }
 });
