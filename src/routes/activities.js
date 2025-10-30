@@ -4,6 +4,7 @@ const Activity = require("../models/activities");
 const authMiddleware = require("../middleware/auth");
 const Task = require("../models/tasks");
 const Recurrence = require("../models/recurrences");
+
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
   try {
@@ -14,11 +15,13 @@ router.get("/", authMiddleware, async (req, res) => {
       $or: [{ owner: memberId }, { members: memberId }],
       dateBegin: { $gte: now },
     })
-      .populate("members", "firstName lastName email")
+      .populate("member", "firstName lastName email")
       .populate("owner", "firstName lastName email")
+      .populate("taskId", "name isOk")
+      .populate("recurrence", "dateDebut dateFin day")
       .sort({ dateBegin: 1 })
       .lean();
-
+    console.log("Activities fetched for member:", memberId, activities);
     if (!activities.length) {
       return res.json({
         result: true,
@@ -50,10 +53,10 @@ router.get("/", authMiddleware, async (req, res) => {
 
     res.json({ result: true, activities: formatted });
   } catch (err) {
-    console.error("Erreur dans GET /activities :", err.stack);
+    console.error("Erreur dans GET /activities :", err);
     res.status(500).json({
       result: false,
-      message: err.message,
+      message: "Erreur serveur lors de la récupération des activités.",
     });
   }
 });
@@ -130,7 +133,7 @@ router.post("/", authMiddleware, async (req, res) => {
       taskId: createdTaskIds,
       recurrence: createdReccurenceId || null,
       owner: ownerId,
-      members: members?.length ? members : [ownerId],
+      member: members?.length ? members : [ownerId],
     });
 
     const savedActivity = await newActivity.save();

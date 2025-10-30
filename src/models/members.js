@@ -14,7 +14,7 @@ const memberSchema = new Schema({
   authorization: [String],
   avatar: String,
   isChildren: { type: Boolean, default: false },
-  zone: { type: Schema.Types.ObjectId, ref: "Zones" },
+  zone: { type: Schema.Types.ObjectId, ref: "zones" },
   token: String,
 });
 
