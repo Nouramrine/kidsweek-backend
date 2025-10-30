@@ -73,6 +73,7 @@ router.post("/", authMiddleware, async (req, res) => {
       note,
       task,
       recurrence,
+      dateEndRecurrence,
       members,
     } = req.body;
 
@@ -104,7 +105,7 @@ router.post("/", authMiddleware, async (req, res) => {
     if (recurrence) {
       const newRecurrence = new Recurrence({
         dateDebut: dateBegin,
-        dateFin: dateEnd,
+        dateFin: dateEndRecurrence,
         day: recurrence,
       });
       const saved = await newRecurrence.save();
@@ -130,10 +131,10 @@ router.post("/", authMiddleware, async (req, res) => {
       reminder: reminder ? new Date(reminder) : null,
       note: note || "",
       validation: false,
-      taskId: createdTaskIds,
+      taskIds: createdTaskIds,
       recurrence: createdReccurenceId || null,
       owner: ownerId,
-      member: members?.length ? members : [ownerId],
+      members: members?.length ? members : [ownerId],
     });
 
     const savedActivity = await newActivity.save();
