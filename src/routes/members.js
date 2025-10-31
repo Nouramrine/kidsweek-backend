@@ -23,8 +23,7 @@ router.post("/", authMiddleware, (req, res) => {
     creator : memberId,
   });
   newMember.save().then((data) => {
-    const { firstName, lastName, isChildren } = data
-    res.json({ result: true, member: { firstName, lastName, isChildren } });
+    res.json({ result: true, member: data });
   });
 });
 
@@ -70,7 +69,6 @@ router.get("/", authMiddleware, async (req, res) => {
       },
       { $replaceRoot: { newRoot: "$doc" } }
     ]);
-    console.log(members)
     res.json({ result: true, members });
   } catch (err) {
     res.json({ result: false, message: err.message });
