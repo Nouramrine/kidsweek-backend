@@ -15,11 +15,12 @@ router.post("/", authMiddleware, (req, res) => {
     return;
   }
   const memberId = req.member._id;
-  const { firstName, lastName, isChildren } = req.body
+  const { firstName, lastName, color, isChildren } = req.body
   const newMember = new Member({
     firstName,
     lastName,
     isChildren,
+    color,
     creator : memberId,
   });
   newMember.save().then((data) => {
@@ -80,7 +81,7 @@ router.get("/", authMiddleware, async (req, res) => {
 router.put("/:memberId", authMiddleware, async (req, res) => {
   try {
     const { memberId } = req.params;
-    const { firstName, lastName, isChildren } = req.body;
+    const { firstName, lastName, color, isChildren } = req.body;
 
     const member = await Member.findById(memberId);
     if (!member) {
@@ -90,6 +91,7 @@ router.put("/:memberId", authMiddleware, async (req, res) => {
     }
     if (firstName) member.firstName = firstName;
     if (lastName) member.lastName = lastName;
+    if (color) member.color = color;
     if (isChildren) member.isChildren = isChildren;
 
     await member.save();

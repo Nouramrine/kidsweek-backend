@@ -3,7 +3,6 @@ const router = express.Router();
 const Zone = require("../models/zones");
 const Member = require("../models/members");
 const authMiddleware = require("../middleware/auth");
-const mongoose = require("mongoose");
 
 //Récupérer toutes les zones du membre connecté
 router.get("/", authMiddleware, async (req, res) => {
@@ -11,11 +10,11 @@ router.get("/", authMiddleware, async (req, res) => {
     const memberId = req.member._id;
     let zones = await Zone.find({
       $or: [{ owner: memberId }, { members: memberId }]
-    }).populate('members', "firstName lastName").lean();
+    }).populate('members', "firstName lastName color isChildren").lean();
     // Ajout des droits
     zones = zones.map((zone) => {
       console.log(zone.owner);
-      return { ...zone, isReadOnly: zone.owner.equals(memberId) ? false : true }
+      return { ...zone, isReadOnly: zone.owner.toString() === memberId.toString() ? false : true }
     })
     res.json({ result: true, zones });
   } catch (err) {
@@ -32,12 +31,12 @@ router.post("/", authMiddleware, async (req, res) => {
     if (!name) {
       return res
         .status(400)
-        .json({ result: false, message: "Le nom de la zone est requis." });
+        .json({ result: false, error: "Le nom de la zone est requis." });
     }
     if (!color) {
       return res
         .status(400)
-        .json({ result: false, message: "La couleur est requise." });
+        .json({ result: false, error: "La couleur est requise." });
     }
 
     const zone = new Zone({
@@ -57,7 +56,7 @@ router.post("/", authMiddleware, async (req, res) => {
 
     res.json({ result: true, zone: populatedZone });
   } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
+    res.status(500).json({ result: false, error: err.message });
   }
 });
 
@@ -72,15 +71,15 @@ router.put("/:zoneId", authMiddleware, async (req, res) => {
     if (!zone) {
       return res
         .status(404)
-        .json({ result: false, message: "Zone non trouvée." });
+        .json({ result: false, error: "Zone non trouvée." });
     }
     if (name) zone.name = name;
     if (color) zone.color = color;
 
     await zone.save();
-    res.json({ result: true, message: "Zone mise à jour.", zone });
+    res.json({ result: true, zone });
   } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
+    res.status(500).json({ result: false, error: err.message });
   }
 });
 
@@ -110,13 +109,13 @@ router.put("/:zoneId/add-member", authMiddleware, async (req, res) => {
     if (!zone) {
       return res
         .status(404)
-        .json({ result: false, message: "Zone non trouvée." });
+        .json({ result: false, error: "Zone non trouvée." });
     }
     const member = await Member.findById(memberId);
     if (!member) {
       return res
         .status(404)
-        .json({ result: false, message: "Membre non trouvé." });
+        .json({ result: false, error: "Membre non trouvé." });
     }
 
     if (!zone.members.includes(memberId)) {
@@ -129,11 +128,11 @@ router.put("/:zoneId/add-member", authMiddleware, async (req, res) => {
       .populate("members")
       .lean();
 
-    populatedZone.isReadOnly = zone.owner.equals(memberId) ? false : true;
+    populatedZone.isReadOnly = zone.owner.toString() === req.member._id.toString() ? false : true;
 
     res.json({ result: true, zone: populatedZone });
   } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
+    res.status(500).json({ result: false, error: err.message });
   }
 });
 
@@ -148,7 +147,7 @@ router.put("/:zoneId/remove-member", authMiddleware, async (req, res) => {
     if (!zone) {
       return res
         .status(404)
-        .json({ result: false, message: "Zone non trouvée." });
+        .json({ result: false, error: "Zone non trouvée." });
     }
 
     zone.members = zone.members.filter(
@@ -156,9 +155,17 @@ router.put("/:zoneId/remove-member", authMiddleware, async (req, res) => {
     );
 
     await zone.save();
-    res.json({ result: true, message: "Membre retiré de la zone.", zone });
+
+    // Renvoi de la zone avec populate
+    const populatedZone = await Zone.findById(zone._id)
+      .populate("members")
+      .lean();
+
+    populatedZone.isReadOnly = zone.owner.toString() === req.member._id.toString() ? false : true;
+
+    res.json({ result: true, zone: populatedZone });
   } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
+    res.status(500).json({ result: false, error: err.message });
   }
 });
 
