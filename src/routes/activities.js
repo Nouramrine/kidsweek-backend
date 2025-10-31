@@ -17,8 +17,8 @@ router.get("/", authMiddleware, async (req, res) => {
     })
       .populate("members", "firstName lastName email")
       .populate("owner", "firstName lastName email")
-      .populate("taskIds", "name isOk")
-      .populate("recurrence", "dateDebut dateFin day")
+      .populate("taskIds", "_id name isOk")
+      .populate("recurrence", "_id dateDebut dateFin day")
       .sort({ dateBegin: 1 })
       .lean();
     console.log("Activities fetched for member:", memberId, activities);
@@ -51,6 +51,7 @@ router.get("/", authMiddleware, async (req, res) => {
       },
       tasks:
         a.taskIds?.map((t) => ({
+          _id: t._id,
           name: t.name,
           isOk: t.isOk,
         })) || [],
@@ -87,6 +88,7 @@ router.post("/", authMiddleware, async (req, res) => {
       recurrence,
       dateEndRecurrence,
       members,
+      color,
     } = req.body;
 
     if (!name || !dateBegin) {
@@ -132,7 +134,8 @@ router.post("/", authMiddleware, async (req, res) => {
       createdTaskIds,
       createdReccurenceId,
       ownerId,
-      members
+      members,
+      color
     );
     // Creer la nouvelle activité avec les taskIds et recurrenceId
     const newActivity = new Activity({
@@ -146,7 +149,8 @@ router.post("/", authMiddleware, async (req, res) => {
       taskIds: createdTaskIds,
       recurrence: createdReccurenceId || null,
       owner: ownerId,
-      members: members?.length ? members : [ownerId],
+      members: members,
+      color: color,
     });
 
     const savedActivity = await newActivity.save();
