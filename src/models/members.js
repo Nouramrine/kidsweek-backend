@@ -13,6 +13,7 @@ const memberSchema = new Schema({
   city: String,
   authorization: [String],
   avatar: String,
+  color: String,
   isChildren: { type: Boolean, default: false },
   zone: { type: Schema.Types.ObjectId, ref: "zones" },
   creator: { type: Schema.Types.ObjectId, ref: "members" },
