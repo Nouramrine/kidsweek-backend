@@ -3,6 +3,7 @@ const router = express.Router();
 const Zone = require("../models/zones");
 const Member = require("../models/members");
 const authMiddleware = require("../middleware/auth");
+const getPopulatedZone = require("../controllers/zones");
 
 //Récupérer toutes les zones du membre connecté
 router.get("/", authMiddleware, async (req, res) => {
@@ -10,12 +11,14 @@ router.get("/", authMiddleware, async (req, res) => {
     const memberId = req.member._id;
     let zones = await Zone.find({
       $or: [{ owner: memberId }, { members: memberId }]
-    }).populate('members', "firstName lastName color isChildren").lean();
-    // Ajout des droits
-    zones = zones.map((zone) => {
-      console.log(zone.owner);
-      return { ...zone, isReadOnly: zone.owner.toString() === memberId.toString() ? false : true }
-    })
+    }).lean();
+
+    // Populate & droits
+    zones = await Promise.all(
+      zones = zones.map( async (zone) => {
+        return await getPopulatedZone(memberId, zone);
+      })
+    )
     res.json({ result: true, zones });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
@@ -46,15 +49,7 @@ router.post("/", authMiddleware, async (req, res) => {
       members: members || [],
     });
     await zone.save();
-
-    // Renvoi de la zone avec populate
-    const populatedZone = await Zone.findById(zone._id)
-      .populate("members")
-      .lean();
-
-    populatedZone.isReadOnly = zone.owner.equals(memberId) ? false : true;
-
-    res.json({ result: true, zone: populatedZone });
+    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -76,8 +71,9 @@ router.put("/:zoneId", authMiddleware, async (req, res) => {
     if (name) zone.name = name;
     if (color) zone.color = color;
 
-    await zone.save();
-    res.json({ result: true, zone });
+    const result = await zone.save();
+    console.log(getPopulatedZone(req.member._id, result))
+    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -122,15 +118,7 @@ router.put("/:zoneId/add-member", authMiddleware, async (req, res) => {
       zone.members.push(memberId);
       await zone.save();
     }
-
-    // Renvoi de la zone avec populate
-    const populatedZone = await Zone.findById(zone._id)
-      .populate("members")
-      .lean();
-
-    populatedZone.isReadOnly = zone.owner.toString() === req.member._id.toString() ? false : true;
-
-    res.json({ result: true, zone: populatedZone });
+    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -155,15 +143,7 @@ router.put("/:zoneId/remove-member", authMiddleware, async (req, res) => {
     );
 
     await zone.save();
-
-    // Renvoi de la zone avec populate
-    const populatedZone = await Zone.findById(zone._id)
-      .populate("members")
-      .lean();
-
-    populatedZone.isReadOnly = zone.owner.toString() === req.member._id.toString() ? false : true;
-
-    res.json({ result: true, zone: populatedZone });
+    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
