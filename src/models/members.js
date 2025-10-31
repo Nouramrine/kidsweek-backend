@@ -11,7 +11,7 @@ const memberSchema = new Schema({
   phoneNumber: String,
   zipCode: String,
   city: String,
-  authorization: [String],
+  type: { type: String, enum: ['local', 'auth'] },
   avatar: String,
   color: String,
   isChildren: { type: Boolean, default: false },
