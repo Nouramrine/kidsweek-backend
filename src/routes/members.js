@@ -10,7 +10,7 @@ const bcrypt = require("bcrypt");
 // Add member
 
 router.post("/", authMiddleware, (req, res) => {
-  if (!checkBody(req.body, ["firstName", "lastName", "isChildren"])) {
+  if (!checkBody(req.body, ["firstName", "lastName", "color"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
