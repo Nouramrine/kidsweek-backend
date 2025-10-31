@@ -52,7 +52,7 @@ router.get("/", authMiddleware, async (req, res) => {
       tasks:
         a.taskIds?.map((t) => ({
           _id: t._id,
-          name: t.name,
+          text: t.name,
           isOk: t.isOk,
         })) || [],
       recurrence: a.recurrence
