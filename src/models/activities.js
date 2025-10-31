@@ -35,6 +35,9 @@ const activitySchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "members",
   },
+  color: {
+    type: String,
+  },
 });
 
 const Activity = mongoose.model("activities", activitySchema);
