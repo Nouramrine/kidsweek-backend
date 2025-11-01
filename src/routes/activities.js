@@ -59,7 +59,7 @@ router.get("/", authMiddleware, async (req, res) => {
         ? {
             dateDebut: a.recurrence.dateDebut,
             dateFin: a.recurrence.dateFin,
-            day: a.recurrence.day,
+            days: a.recurrence.days,
           }
         : null,
     }));
