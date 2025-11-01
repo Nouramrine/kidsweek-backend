@@ -15,12 +15,13 @@ router.post("/", authMiddleware, (req, res) => {
   }
   const memberId = req.member._id;
   const { firstName, lastName, color, isChildren } = req.body
+
   const newMember = new Member({
     firstName,
     lastName,
     isChildren,
     color,
-    creator : memberId,
+    authorizations: [ { member: memberId, level: 'admin'} ],
   });
   newMember.save().then((data) => {
     res.json({ result: true, member: data });
@@ -33,11 +34,11 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
     const members = await Member.aggregate([
-      // Étape 1 : récupérer les utilisateurs créés par userId
-      { $match: { creator: memberId } },
+      // Étape 1 : récupérer les utilisateurs level admin
+      { $match: { authorizations: { $elemMatch: { member: memberId, level: 'admin' }  } } },
       { $unionWith: { coll: "zones", pipeline: [
-        { // Étape 2 : zones où on est owner ou membre
-          $match: { $or: [ { owner: memberId }, { members: memberId } ]}
+        { // Étape 2 : ajouter membres de zones où on est owner ou membre
+          $match: { $or: [ { owner: memberId }, { members: memberId } ] }
         },
         { // Étape 3 : récupérer tous les IDs des membres et de l’owner
           $project: { 

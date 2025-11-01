@@ -3,22 +3,12 @@ const router = express.Router();
 const Zone = require("../models/zones");
 const Member = require("../models/members");
 const authMiddleware = require("../middleware/auth");
-const getPopulatedZone = require("../controllers/zones");
+const getZones = require("../controllers/zones");
 
 //Récupérer toutes les zones du membre connecté
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const memberId = req.member._id;
-    let zones = await Zone.find({
-      $or: [{ owner: memberId }, { members: memberId }]
-    }).lean();
-
-    // Populate & droits
-    zones = await Promise.all(
-      zones = zones.map( async (zone) => {
-        return await getPopulatedZone(memberId, zone);
-      })
-    )
+    const zones = await getZones(req.member._id);
     res.json({ result: true, zones });
   } catch (err) {
     res.status(500).json({ result: false, message: err.message });
@@ -30,7 +20,6 @@ router.post("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
     const { name, color, members } = req.body;
-    members.push(memberId)
     if (!name) {
       return res
         .status(400)
@@ -41,16 +30,15 @@ router.post("/", authMiddleware, async (req, res) => {
         .status(400)
         .json({ result: false, error: "La couleur est requise." });
     }
-
     const zone = new Zone({
       name,
       color: color,
-      owner: memberId,
-      members: members || [],
+      authorizations : [ { member: memberId, level: 'admin' } ],
     });
     await zone.save();
-    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
+    res.json({ result: true, zones: await getZones(req.member._id, zone._id) });
   } catch (err) {
+    console.log("Create Zone", err)
     res.status(500).json({ result: false, error: err.message });
   }
 });
@@ -72,8 +60,7 @@ router.put("/:zoneId", authMiddleware, async (req, res) => {
     if (color) zone.color = color;
 
     const result = await zone.save();
-    console.log(getPopulatedZone(req.member._id, result))
-    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
+    res.json({ result: true, zones: await getZones(req.member._id, zone._id) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -88,7 +75,7 @@ router.delete("/:zoneId", authMiddleware, async (req, res) => {
     if (!deletedZone) {
       return res.status(404).json({ result: false, error: "Zone non trouvée." });
     }
-    res.json({ result: true, zone: deletedZone });
+    res.json({ result: true, zones: deletedZone });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -101,24 +88,29 @@ router.put("/:zoneId/add-member", authMiddleware, async (req, res) => {
     const { zoneId } = req.params;
     const { memberId } = req.body;
 
+    // Vérifier que la zone existe
     const zone = await Zone.findById(zoneId);
     if (!zone) {
-      return res
-        .status(404)
-        .json({ result: false, error: "Zone non trouvée." });
-    }
-    const member = await Member.findById(memberId);
-    if (!member) {
-      return res
-        .status(404)
-        .json({ result: false, error: "Membre non trouvé." });
+      return res.status(404).json({ result: false, error: "Zone non trouvée." });
     }
 
-    if (!zone.members.includes(memberId)) {
-      zone.members.push(memberId);
-      await zone.save();
+    // Vérifier que le membre existe
+    const member = await Member.findById(memberId);
+    if (!member) {
+      return res.status(404).json({ result: false, error: "Membre non trouvé." });
     }
-    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
+
+    // Vérifier si le membre est déjà dans la zone
+    const exists = zone.authorizations.some(auth => auth.member.toString() === memberId);
+    if (exists) {
+      return res.status(400).json({ result: false, error: "Le membre est déjà dans cette zone." });
+    }
+
+    // Ajouter le membre avec un niveau d'autorisation par défaut
+    zone.authorizations.push({ member: memberId, level: 'read' });
+    await zone.save();
+
+    res.json({ result: true, zones: await getZones(req.member._id, zone._id) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -131,19 +123,29 @@ router.put("/:zoneId/remove-member", authMiddleware, async (req, res) => {
     const { zoneId } = req.params;
     const { memberId } = req.body;
 
+    // Vérifier que la zone existe
     const zone = await Zone.findById(zoneId);
     if (!zone) {
-      return res
-        .status(404)
-        .json({ result: false, error: "Zone non trouvée." });
+      return res.status(404).json({ result: false, error: "Zone non trouvée." });
     }
 
-    zone.members = zone.members.filter(
-      (m) => m.toString() !== memberId.toString()
-    );
+    // Vérifier que le membre existe
+    const member = await Member.findById(memberId);
+    if (!member) {
+      return res.status(404).json({ result: false, error: "Membre non trouvé." });
+    }
 
+    // Vérifier si le membre est dans la zone
+    const index = zone.authorizations.findIndex(auth => auth.member.toString() === memberId);
+    if (index === -1) {
+      return res.status(400).json({ result: false, error: "Le membre n'est pas dans cette zone." });
+    }
+
+    // Supprimer le membre de la liste des authorizations
+    zone.authorizations.splice(index, 1);
     await zone.save();
-    res.json({ result: true, zone: await getPopulatedZone(req.member._id, zone) });
+
+    res.json({ result: true, zones: await getZones(req.member._id, zone._id) });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }

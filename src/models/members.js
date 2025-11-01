@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
+const authorizationSchema = new Schema({
+  member: { type: Schema.Types.ObjectId, ref: 'members', required: true },
+  level: { type: String, enum: ['read', 'write', 'admin'], required: true },
+  grantedAt: { type: Date, default: Date.now }
+});
+
 const memberSchema = new Schema({
   firstName: { type: String, required: true },
   lastName: { type: String },
@@ -11,12 +17,12 @@ const memberSchema = new Schema({
   phoneNumber: String,
   zipCode: String,
   city: String,
-  type: { type: String, enum: ['local', 'auth'] },
   avatar: String,
   color: String,
+  authorizations: [authorizationSchema],
   isChildren: { type: Boolean, default: false },
   zone: { type: Schema.Types.ObjectId, ref: "zones" },
-  creator: { type: Schema.Types.ObjectId, ref: "members" },
+  type: [{ type: String, enum: ['local', 'auth']}],
   token: String,
 }, { isTimeStamp: true });
 
