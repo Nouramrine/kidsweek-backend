@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const recurrenceSchema = new Schema({
   dateDebut: Date,
   dateFin: Date,
-  day: [String],
+  days: [String],
 });
 
 const Recurrence = mongoose.model("recurrences", recurrenceSchema);
