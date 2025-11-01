@@ -34,40 +34,47 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
     const members = await Member.aggregate([
-      // Étape 1 : récupérer les utilisateurs level admin
-      { $match: { authorizations: { $elemMatch: { member: memberId, level: 'admin' }  } } },
-      { $unionWith: { coll: "zones", pipeline: [
-        { // Étape 2 : ajouter membres de zones où on est owner ou membre
-          $match: { $or: [ { owner: memberId }, { members: memberId } ] }
-        },
-        { // Étape 3 : récupérer tous les IDs des membres et de l’owner
-          $project: { 
-            userIds: { 
-              $setUnion: [
-                { $ifNull: ["$members", []] },
-                [{ $ifNull: ["$owner", null] }]
-              ]
-            }
-          }
-        },
-        { $unwind: "$userIds" }, // on déplie pour avoir un document par userId
-          { // Étape 4 : récupérer les documents User correspondant
-            $lookup: {
-              from: "members",
-              localField: "memberIds",
-              foreignField: "_id",
-              as: "member"
-            }
-          },
-          { $unwind: "$member" },
-          { $replaceRoot: { newRoot: "$member" } } // on remplace pour ne garder que le document User
-      ]}},
-      { // Étape 5 : enlever les doublons
-        $group: {
+      // Étape 1 : récupérer les utilisateurs sur lesquels on a une authorization
+      { $match: { "authorizations.member": memberId } },
+
+      // Étape 2 : union avec les membres des zones où on a une authorization
+      { $unionWith: {
+          coll: "zones",
+          pipeline: [
+            // récupérer les zones où memberId a une authorization
+            { $match: { "authorizations.member": memberId } },
+
+            // récupérer tous les IDs des membres de la zone
+            { $project: { 
+                userIds: {
+                  $map: {
+                    input: "$authorizations",
+                    as: "auth",
+                    in: "$$auth.member"
+                  }
+                }
+            }},
+
+            // déplier les IDs pour un document par userId
+            { $unwind: "$userIds" },
+
+            // récupérer les documents Member correspondants
+            { $lookup: {
+                from: "members",
+                localField: "userIds",
+                foreignField: "_id",
+                as: "member"
+            }},
+            { $unwind: "$member" },
+            { $replaceRoot: { newRoot: "$member" } }
+          ]
+      }},
+
+      // Étape 3 : enlever les doublons
+      { $group: {
           _id: "$_id",
           doc: { $first: "$$ROOT" }
-        }
-      },
+      }},
       { $replaceRoot: { newRoot: "$doc" } }
     ]);
     res.json({ result: true, members });
