@@ -18,7 +18,7 @@ router.get("/", authMiddleware, async (req, res) => {
       .populate("members", "firstName lastName email")
       .populate("owner", "firstName lastName email")
       .populate("taskIds", "_id name isOk")
-      .populate("recurrence", "_id dateDebut dateFin day")
+      .populate("recurrence", "_id dateDebut dateFin days")
       .sort({ dateBegin: 1 })
       .lean();
     console.log("Activities fetched for member:", memberId, activities);
@@ -120,7 +120,7 @@ router.post("/", authMiddleware, async (req, res) => {
       const newRecurrence = new Recurrence({
         dateDebut: dateBegin,
         dateFin: dateEndRecurrence,
-        day: recurrence,
+        days: recurrence,
       });
       const saved = await newRecurrence.save();
       createdReccurenceId = saved._id;
