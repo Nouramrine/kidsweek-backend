@@ -239,7 +239,9 @@ router.put("/:id", authMiddleware, async (req, res) => {
       members,
       color,
     } = req.body;
-
+    console.log("=== PUT /activities/:id ===");
+    console.log("members reçus :", members);
+    console.log("body complet :", req.body);
     const activity = await Activity.findById(id);
     if (!activity) {
       return res
