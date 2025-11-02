@@ -39,17 +39,21 @@ router.get("/", authMiddleware, async (req, res) => {
       reminder: a.reminder || "",
       note: a.note || "",
       validation: a.validation,
-      members: a.members.map((m) => ({
-        firstName: m.firstName,
-        lastName: m.lastName,
-        email: m.email,
-        color: m.color,
-      })),
-      owner: {
-        firstName: a.owner?.firstName || "",
-        lastName: a.owner?.lastName || "",
-        email: a.owner?.email || "",
-      },
+      members:
+        a.members?.map((m) => ({
+          _id: m._id,
+          firstName: m.firstName,
+          lastName: m.lastName,
+          email: m.email,
+          color: m.color,
+        })) || [],
+      owner: a.owner
+        ? {
+            firstName: a.owner.firstName,
+            lastName: a.owner.lastName,
+            email: a.owner.email,
+          }
+        : null,
       tasks:
         a.taskIds?.map((t) => ({
           _id: t._id,
@@ -63,6 +67,7 @@ router.get("/", authMiddleware, async (req, res) => {
             days: a.recurrence.days,
           }
         : null,
+      color: a.color || "#ccc",
     }));
 
     res.json({ result: true, activities: formatted });
