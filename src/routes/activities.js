@@ -43,6 +43,7 @@ router.get("/", authMiddleware, async (req, res) => {
         firstName: m.firstName,
         lastName: m.lastName,
         email: m.email,
+        color: m.color,
       })),
       owner: {
         firstName: a.owner?.firstName || "",
@@ -271,19 +272,40 @@ router.put("/:id", authMiddleware, async (req, res) => {
     let updatedRecurrenceId = activity.recurrence;
 
     if (recurrence) {
-      // Si une récurrence existait, la mettre à jour
+      // Si une récurrence existait, la mettre à jour COMPLÈTEMENT
       if (activity.recurrence) {
-        await Recurrence.findByIdAndUpdate(activity.recurrence, {
-          dateDebut: dateBegin,
-          dateFin: dateEndRecurrence,
-          days: recurrence,
-        });
+        // CORRECTION : Utiliser findByIdAndUpdate avec l'option de remplacement complet
+        await Recurrence.findByIdAndUpdate(
+          activity.recurrence,
+          {
+            dateDebut: dateBegin,
+            dateFin: dateEndRecurrence,
+            days: {
+              lun: recurrence.lun || false,
+              mar: recurrence.mar || false,
+              mer: recurrence.mer || false,
+              jeu: recurrence.jeu || false,
+              ven: recurrence.ven || false,
+              sam: recurrence.sam || false,
+              dim: recurrence.dim || false,
+            },
+          },
+          { overwrite: false } // Ne pas écraser tout le document, mais mettre à jour les champs
+        );
       } else {
         // Sinon, créer une nouvelle récurrence
         const newRecurrence = new Recurrence({
           dateDebut: dateBegin,
           dateFin: dateEndRecurrence,
-          days: recurrence,
+          days: {
+            lun: recurrence.lun || false,
+            mar: recurrence.mar || false,
+            mer: recurrence.mer || false,
+            jeu: recurrence.jeu || false,
+            ven: recurrence.ven || false,
+            sam: recurrence.sam || false,
+            dim: recurrence.dim || false,
+          },
         });
         const saved = await newRecurrence.save();
         updatedRecurrenceId = saved._id;
