@@ -85,7 +85,7 @@ router.post("/", authMiddleware, async (req, res) => {
       dateEnd,
       reminder,
       note,
-      task,
+      tasks,
       recurrence,
       dateEndRecurrence,
       members,
@@ -104,8 +104,8 @@ router.post("/", authMiddleware, async (req, res) => {
     // Gérer les tasks et stocker leurs IDs
 
     let createdTaskIds = [];
-    if (Array.isArray(task) && task.length > 0) {
-      for (const t of task) {
+    if (Array.isArray(tasks) && tasks.length > 0) {
+      for (const t of tasks) {
         if (!t.text) continue;
         const newTask = new Task({
           name: t.text,
@@ -228,7 +228,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
       dateEnd,
       reminder,
       note,
-      task,
+      tasks,
       recurrence,
       dateEndRecurrence,
       members,
@@ -250,14 +250,14 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
     // Gérer les tasks
     let updatedTaskIds = [];
-    if (Array.isArray(task) && task.length > 0) {
+    if (Array.isArray(tasks) && tasks.length > 0) {
       // Supprimer les anciennes tâches
       if (activity.taskIds && activity.taskIds.length > 0) {
         await Task.deleteMany({ _id: { $in: activity.taskIds } });
       }
 
       // Créer les nouvelles tâches
-      for (const t of task) {
+      for (const t of tasks) {
         if (!t.text) continue;
         const newTask = new Task({
           name: t.text,
