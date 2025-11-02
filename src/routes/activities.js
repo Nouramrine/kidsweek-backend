@@ -220,6 +220,19 @@ router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const memberId = req.member._id;
+    const {
+      name,
+      place,
+      dateBegin,
+      dateEnd,
+      reminder,
+      note,
+      task,
+      recurrence,
+      dateEndRecurrence,
+      members,
+      color,
+    } = req.body;
 
     const activity = await Activity.findById(id);
     if (!activity) {
@@ -234,31 +247,85 @@ router.put("/:id", authMiddleware, async (req, res) => {
         .json({ result: false, message: "Modification non autorisée." });
     }
 
-    const updatableFields = [
-      "name",
-      "place",
-      "dateBegin",
-      "dateEnd",
-      "reminder",
-      "note",
-      "validation",
-      "taskId",
-      "recurrence",
-      "members",
-    ];
+    // Gérer les tasks
+    let updatedTaskIds = [];
+    if (Array.isArray(task) && task.length > 0) {
+      // Supprimer les anciennes tâches
+      if (activity.taskIds && activity.taskIds.length > 0) {
+        await Task.deleteMany({ _id: { $in: activity.taskIds } });
+      }
 
-    updatableFields.forEach((field) => {
-      if (req.body[field] !== undefined) activity[field] = req.body[field];
-    });
+      // Créer les nouvelles tâches
+      for (const t of task) {
+        if (!t.text) continue;
+        const newTask = new Task({
+          name: t.text,
+          isOk: t.checked || t.isOk || false,
+        });
+        const saved = await newTask.save();
+        updatedTaskIds.push(saved._id);
+      }
+    }
 
-    const updated = await activity.save();
+    // Gérer la récurrence
+    let updatedRecurrenceId = activity.recurrence;
+
+    if (recurrence) {
+      // Si une récurrence existait, la mettre à jour
+      if (activity.recurrence) {
+        await Recurrence.findByIdAndUpdate(activity.recurrence, {
+          dateDebut: dateBegin,
+          dateFin: dateEndRecurrence,
+          days: recurrence,
+        });
+      } else {
+        // Sinon, créer une nouvelle récurrence
+        const newRecurrence = new Recurrence({
+          dateDebut: dateBegin,
+          dateFin: dateEndRecurrence,
+          days: recurrence,
+        });
+        const saved = await newRecurrence.save();
+        updatedRecurrenceId = saved._id;
+      }
+    } else {
+      // Si pas de récurrence dans la requête, supprimer l'ancienne si elle existe
+      if (activity.recurrence) {
+        await Recurrence.findByIdAndDelete(activity.recurrence);
+        updatedRecurrenceId = null;
+      }
+    }
+
+    // Mettre à jour l'activité
+    activity.name = name || activity.name;
+    activity.place = place !== undefined ? place : activity.place;
+    activity.dateBegin = dateBegin ? new Date(dateBegin) : activity.dateBegin;
+    activity.dateEnd = dateEnd ? new Date(dateEnd) : activity.dateEnd;
+    activity.reminder = reminder ? new Date(reminder) : null;
+    activity.note = note !== undefined ? note : activity.note;
+    activity.taskIds =
+      updatedTaskIds.length > 0 ? updatedTaskIds : activity.taskIds;
+    activity.recurrence = updatedRecurrenceId;
+    activity.members = members || activity.members;
+    activity.color = color || activity.color;
+
+    const updatedActivity = await activity.save();
+
+    // Populate pour retourner les données complètes
+    const populatedActivity = await Activity.findById(updatedActivity._id)
+      .populate("members", "firstName lastName email")
+      .populate("owner", "firstName lastName email")
+      .populate("taskIds", "_id name isOk")
+      .populate("recurrence", "_id dateDebut dateFin days")
+      .lean();
+
     res.json({
       result: true,
-      activity: updated,
+      activity: populatedActivity,
       message: "Activité mise à jour avec succès.",
     });
   } catch (err) {
-    console.error("Erreur dans PUT /activities :", err);
+    console.error("Erreur dans PUT /activities/:id :", err);
     res.status(500).json({ result: false, message: err.message });
   }
 });
