@@ -10,11 +10,17 @@ router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
     const now = new Date();
+    const includePast = req.query.includePast === "true";
 
-    const activities = await Activity.find({
+    const filter = {
       $or: [{ owner: memberId }, { members: memberId }],
-      dateBegin: { $gte: now },
-    })
+    };
+
+    if (!includePast) {
+      filter.dateBegin = { $gte: now };
+    }
+
+    const activities = await Activity.find(filter)
       .populate("members", "firstName lastName email")
       .populate("owner", "firstName lastName email")
       .populate("taskIds", "_id name isOk")
