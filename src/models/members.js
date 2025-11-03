@@ -22,7 +22,7 @@ const memberSchema = new Schema({
   authorizations: [authorizationSchema],
   isChildren: { type: Boolean, default: false },
   zone: { type: Schema.Types.ObjectId, ref: "zones" },
-  type: [{ type: String, enum: ['local', 'auth']}],
+  type: { type: String, enum: ['local', 'auth'], default: 'local' },
   token: String,
 }, { isTimeStamp: true });
 

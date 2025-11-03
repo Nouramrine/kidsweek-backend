@@ -49,6 +49,42 @@ const getZones = async ( authMemberId, zoneId = null ) => {
             }
           }
         }
+      },
+      // Ajouter le niveau d'autorisation pour chaque membre
+      {
+        $addFields: {
+          members: {
+            $map: {
+              input: "$members",
+              as: "m",
+              in: {
+                $mergeObjects: [
+                  "$$m",
+                  {
+                    authLevel: {
+                      $let: {
+                        vars: {
+                          authEntry: {
+                            $arrayElemAt: [
+                              {
+                                $filter: {
+                                  input: "$authorizations",
+                                  cond: { $eq: ["$$this.member", "$$m._id"] }
+                                }
+                              },
+                              0
+                            ]
+                          }
+                        },
+                        in: "$$authEntry.level"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
       }
     ])
   return zones;
