@@ -75,7 +75,10 @@ router.get("/", authMiddleware, async (req, res) => {
           _id: "$_id",
           doc: { $first: "$$ROOT" }
       }},
-      { $replaceRoot: { newRoot: "$doc" } }
+      { $replaceRoot: { newRoot: "$doc" } }, 
+
+      // Étape 4 : exclure le membre connecté
+      { $match: { _id: { $ne: memberId } } },
     ]);
     res.json({ result: true, members });
   } catch (err) {
