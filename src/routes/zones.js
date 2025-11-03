@@ -75,7 +75,8 @@ router.delete("/:zoneId", authMiddleware, async (req, res) => {
     if (!deletedZone) {
       return res.status(404).json({ result: false, error: "Zone non trouvée." });
     }
-    res.json({ result: true, zones: deletedZone });
+    console.log(deletedZone);
+    res.json({ result: true, zones: [deletedZone] });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
