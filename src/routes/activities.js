@@ -400,4 +400,59 @@ router.put("/:id/validate", authMiddleware, async (req, res) => {
   }
 });
 
+router.put("/:activityId/tasks/:taskId", authMiddleware, async (req, res) => {
+  try {
+    const { activityId, taskId } = req.params;
+    const { isOk } = req.body;
+    const memberId = req.member._id;
+    //console.log("dans le back");
+    // Vérifier que l'activité existe et que le membre y a accès
+    const activity = await Activity.findById(activityId);
+    if (!activity) {
+      return res.status(404).json({
+        result: false,
+        message: "Activité non trouvée.",
+      });
+    }
+
+    // Vérifier que le membre est soit owner soit participant
+    const hasAccess =
+      activity.owner.toString() === memberId.toString() ||
+      activity.members.some((m) => m.toString() === memberId.toString());
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        result: false,
+        message: "Accès non autorisé.",
+      });
+    }
+
+    // Mettre à jour la tâche
+    const updatedTask = await Task.findByIdAndUpdate(
+      taskId,
+      { isOk: isOk },
+      { new: true } // Retourne le document mis à jour
+    );
+
+    if (!updatedTask) {
+      return res.status(404).json({
+        result: false,
+        message: "Tâche non trouvée.",
+      });
+    }
+
+    res.json({
+      result: true,
+      task: updatedTask,
+      message: "Tâche mise à jour avec succès.",
+    });
+  } catch (err) {
+    console.error(
+      "Erreur dans PUT /activities/:activityId/tasks/:taskId :",
+      err
+    );
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
+
 module.exports = router;
