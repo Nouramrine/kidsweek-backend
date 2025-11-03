@@ -32,7 +32,7 @@ const sendMail = async (emailData) => {
 };
 
 export const sendInvite = async (invite) => {
-    const link = `http://kidsweek.fr/invitation/${invite.token}`;
+    const link = `http://192.168.1.61:8081/?token=${invite.token}`;
     const inviteMailData = {
         to: invite.email,
         subject: `KidsWeek - Nouvelle invitation`,
