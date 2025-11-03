@@ -171,24 +171,31 @@ router.post("/", authMiddleware, async (req, res) => {
     res.status(500).json({ result: false, message: err.message });
   }
 });
-// Recupérer les notifications de l'utilisateur
+// Récupérer les notifications de l'utilisateur
 router.get("/notifications", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
+    const now = new Date();
 
-    const activities = await Activity.find({
+    // Invitations : activités où je suis membre mais pas encore validées
+    const invitations = await Activity.find({
       members: memberId,
       validation: false,
     })
       .populate("owner", "firstName lastName email")
       .lean();
 
+    // ✅ Reminders : activités dont le rappel est arrivé, mais qui ne sont pas encore commencées
     const reminders = await Activity.find({
-      owner: memberId,
-      reminder: { $ne: null },
-    }).lean();
+      $or: [{ owner: memberId }, { members: memberId }],
+      reminder: { $ne: null, $lte: now },
+      dateBegin: { $gt: now }, // activité encore à venir
+    })
+      .populate("owner", "firstName lastName email")
+      .populate("members", "firstName lastName email")
+      .lean();
 
-    res.json({ result: true, invitations: activities, reminders });
+    res.json({ result: true, invitations, reminders });
   } catch (err) {
     console.error("Erreur dans GET /activities/notifications :", err);
     res.status(500).json({ result: false, message: err.message });
