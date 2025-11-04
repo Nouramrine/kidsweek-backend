@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const Member = require("../models/members");
+const Invite = require("../models/invites");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
@@ -28,8 +29,7 @@ router.post("/", authMiddleware, (req, res) => {
   });
 });
 
-// Get members from zone and created by
-
+// Get members from zone and authorizations
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
@@ -87,7 +87,6 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 
 // Modifier un membre
-
 router.put("/:memberId", authMiddleware, async (req, res) => {
   try {
     const { memberId } = req.params;
@@ -113,7 +112,6 @@ router.put("/:memberId", authMiddleware, async (req, res) => {
 
 
 // delete member
-
 router.delete("/:memberId", authMiddleware, async (req, res) => {
   try {
     const memberId = req.params.memberId;
@@ -127,37 +125,72 @@ router.delete("/:memberId", authMiddleware, async (req, res) => {
   }
 });
 
-//Signup
-
-router.post("/signup", (req, res) => {
+// Signup
+router.post("/signup", async (req, res) => {
   if (!checkBody(req.body, ["firstName", "lastName", "email", "password"], ['email'])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
-  const { firstName, lastName, email, password } = req.body
-  Member.findOne({ email }).then((data) => {
-    if (data === null) {
-      const hash = bcrypt.hashSync(password, 10);
-      const newMember = new Member({
-        firstName,
-        lastName,
-        email,
-        password: hash,
-        token: uid2(32),
+  const { firstName, lastName, email, inviteToken, password } = req.body;
+  try {
+    const existingMember = await Member.findOne({ email });
+
+    if (existingMember && !inviteToken) {
+      return res.json({ result: false, error: "L'utilisateur existe déjà" });
+    }
+
+    let invite = null;
+    if (inviteToken) {
+      invite = await Invite.findOne({ token: inviteToken, status: 'pending' });
+      if (!invite) {
+        return res.json({ result: false, error: "Token d'invitation invalide ou déjà utilisé" });
+      }
+      if (invite.expiresAt && new Date() > invite.expiresAt) {
+        return res.json({ result: false, error: "Le token d'invitation a expiré" });
+      }
+    }
+    
+    // Créer le nouveau membre
+    const hash = bcrypt.hashSync(password, 10);
+    const newMember = new Member({
+      firstName,
+      lastName,
+      email,
+      password: hash,
+      token: uid2(32),
+    });
+    
+    const savedMember = await newMember.save();
+    
+    // Si invitation, mettre à jour l'invite avec le membre créé
+    if (invite) {
+      await Invite.findByIdAndUpdate(invite._id, {
+        memberId: savedMember._id,
+        used: true,
+        usedAt: new Date()
       });
       
-      newMember.save().then((data) => {
-        const { firstName, lastName, email, token } = data
-        res.json({ result: true, member: { firstName, lastName, email, token } });
-      });
-    } else {
-      res.json({ result: false, error: "L'utilisateur existe déjà" });
+      // Optionnel : créer une relation entre l'invitant et l'invité
+      // Par exemple, ajouter dans une collection de relations familiales
+      if (invite.invitedId) {
+        // Logique pour lier les deux membres (famille, amis, etc.)
+        // await createRelation(invite.invitedId, savedMember._id);
+      }
     }
-  });
+    
+    const { firstName: fName, lastName: lName, email: memberEmail, token } = savedMember;
+    res.json({ 
+      result: true, 
+      member: { firstName: fName, lastName: lName, email: memberEmail, token },
+      invitation: invite ? { invitedBy: invite.invitedId } : null
+    });
+    
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
 });
 
 // Signin
-
 router.post("/signin", (req, res) => {
   if (!checkBody(req.body, ["email", "password"], ['email'])) {
     res.json({ result: false, error: "Champs manquants ou vides" });

@@ -32,14 +32,13 @@ const sendMail = async (emailData) => {
 };
 
 export const sendInvite = async (invite) => {
-    const link = `http://192.168.1.61:8081/?token=${invite.token}`;
     const inviteMailData = {
         to: invite.email,
         subject: `KidsWeek - Nouvelle invitation`,
         text: `${invite.inviter.lastName} ${invite.inviter.firstName} vous invite à le rejoindre sur KidsWeek.
-        Rendez-vous sur ce lien : ${link}`,
+        Rendez-vous sur ce lien : ${invite.url}`,
         html: `<p>${invite.inviter.lastName} ${invite.inviter.firstName} vous invite à le rejoindre sur KidsWeek.
-        Rendez-vous sur ce lien : ${link}`
+        Rendez-vous sur ce lien : ${invite.url}`
     }
     const mailer = await sendMail(inviteMailData);
     if(mailer.result) {
