@@ -41,5 +41,9 @@ export const sendInvite = async (invite) => {
         html: `<p>${invite.inviter.lastName} ${invite.inviter.firstName} vous invite à le rejoindre sur KidsWeek.
         Rendez-vous sur ce lien : ${link}`
     }
-    return await sendMail(inviteMailData);
+    const mailer = await sendMail(inviteMailData);
+    if(mailer.result) {
+      return { result: true, mailer }
+    }
+      return {result: false, error: mailer.error}
 }

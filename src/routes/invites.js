@@ -5,11 +5,25 @@ const authMiddleware = require("../middleware/auth");
 const uid2 = require('uid2');
 const { sendInvite } = require('../modules/mailer');
 
-//Récupérer toutes les zones du membre connecté
+//Récupérer toutes les invitations
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const invites = await Invite.find({ $or: { inviter: req.member._id, invited: req.member._id }});
     res.json({ result: true, invites });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
+});
+
+//Vérifier un token
+router.get("/:token", async (req, res) => {
+  try {
+    const invites = await Invite.findOne({ token: req.params.token });
+    if(token) {
+        res.json({ result: true, invites });
+    } else {
+        res.json({ result: false, error: `Le token n'existe pas` });
+    }
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
@@ -35,8 +49,12 @@ router.post("/", authMiddleware, async (req, res) => {
             });
             await invite.save();
         }
-        invite = await sendInvite(invite);
-        res.json({ result: true, invites: invite });
+        const mailing = await sendInvite(invite);
+        if(mailing.result) {
+            res.json({ result: true, invites: invite });
+        } else {
+            res.json({ result: false, error: 'Echec mail' });
+        }
     } catch (err) {
         res.status(500).json({ result: false, error: err.message });
     }
