@@ -69,12 +69,7 @@ router.post("/", authMiddleware, async (req, res) => {
             });
             await invite.save();
         }
-        const mailing = await sendInvite(invite);
-        if(mailing.result) {
-            res.json({ result: true, invites: invite });
-        } else {
-            res.json({ result: false, error: 'Echec mail' });
-        }
+        res.json({ result: true, invites: invite });
     } catch (err) {
         res.status(500).json({ result: false, error: err.message });
     }
