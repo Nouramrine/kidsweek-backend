@@ -101,7 +101,7 @@ router.put("/:memberId", authMiddleware, async (req, res) => {
     if (firstName) member.firstName = firstName;
     if (lastName) member.lastName = lastName;
     if (color) member.color = color;
-    if (isChildren) member.isChildren = isChildren;
+    member.isChildren = isChildren ? true : false;
 
     await member.save();
     res.json({ result: true, message: "Membre mise à jour.", member });
@@ -140,49 +140,47 @@ router.post("/signup", async (req, res) => {
     }
 
     let invite = null;
+    let savedMember = null;
     if (inviteToken) {
-      invite = await Invite.findOne({ token: inviteToken, status: 'pending' });
+      invite = await Invite.findOne({ token: inviteToken, status: 'pending' }).populate('inviter');
       if (!invite) {
-        return res.json({ result: false, error: "Token d'invitation invalide ou déjà utilisé" });
+        return res.json({ result: false, error: "Erreur de récupération de l'invitation" });  
       }
-      if (invite.expiresAt && new Date() > invite.expiresAt) {
-        return res.json({ result: false, error: "Le token d'invitation a expiré" });
+      // Maj du membre avec les infos signUp
+      const member = await Member.findById(invite.invited._id)
+      const hash = bcrypt.hashSync(password, 10);
+      member.firstName = firstName;
+      member.lastName = lastName;
+      member.email = email;
+      member.password = hash;
+      member.type = 'auth'
+      member.token = uid2(32)
+      savedMember = await member.save()
+      if(savedMember && invite) {
+        // Validation de l'invitation
+        await Invite.findByIdAndUpdate(invite._id, {
+          status: 'accepted'
+        });
+      } else {
+        return res.json({ result: false, error: "Erreur de maj du membre" });  
       }
-    }
-    
-    // Créer le nouveau membre
-    const hash = bcrypt.hashSync(password, 10);
-    const newMember = new Member({
-      firstName,
-      lastName,
-      email,
-      password: hash,
-      token: uid2(32),
-    });
-    
-    const savedMember = await newMember.save();
-    
-    // Si invitation, mettre à jour l'invite avec le membre créé
-    if (invite) {
-      await Invite.findByIdAndUpdate(invite._id, {
-        memberId: savedMember._id,
-        used: true,
-        usedAt: new Date()
+    } else {
+      // Créer le nouveau membre
+      const hash = bcrypt.hashSync(password, 10);
+      const newMember = new Member({
+        firstName,
+        lastName,
+        email,
+        password: hash,
+        token: uid2(32),
       });
-      
-      // Optionnel : créer une relation entre l'invitant et l'invité
-      // Par exemple, ajouter dans une collection de relations familiales
-      if (invite.invitedId) {
-        // Logique pour lier les deux membres (famille, amis, etc.)
-        // await createRelation(invite.invitedId, savedMember._id);
-      }
+      savedMember = await newMember.save();
     }
     
     const { firstName: fName, lastName: lName, email: memberEmail, token } = savedMember;
     res.json({ 
       result: true, 
-      member: { firstName: fName, lastName: lName, email: memberEmail, token },
-      invitation: invite ? { invitedBy: invite.invitedId } : null
+      member: { firstName: fName, lastName: lName, email: memberEmail, token } 
     });
     
   } catch (err) {
