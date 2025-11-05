@@ -260,7 +260,7 @@ router.get("/notifications", authMiddleware, async (req, res) => {
       .populate("activityId")
       .lean();
 
-    console.log(
+    /*console.log(
       "🔍 Invitations trouvées en base:",
       invitations.map((inv) => ({
         id: inv._id,
@@ -268,7 +268,7 @@ router.get("/notifications", authMiddleware, async (req, res) => {
         activityName: inv.activityId?.name,
         sender: inv.sender?.firstName,
       }))
-    );
+    );*/
 
     const reminders = await Notification.find({
       memberId,

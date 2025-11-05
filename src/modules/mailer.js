@@ -4,26 +4,44 @@ const sendMail = async (emailData) => {
   const { to, subject, text, html } = emailData;
   try {
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      type: "OAuth2",
-      secure: true,
+      host: "smtp-relay.brevo.com",
+      port: 587,
+      secure: false,
       auth: {
-        user: "vincent@assomption-mediterranee.net",
-        pass: "wegp scwp ulok nsrb",
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
-    });
 
-    const mailOptions = {
-      from: '"KidsWeek" <kidsweek@free.fr>',
+      tls: {
+        rejectUnauthorized: false,
+      },
+      logger: true,
+      debug: true,
+    });
+    console.log("🔄 Test de connexion...");
+    await transporter.verify();
+    console.log("✅ Connexion réussie !");
+
+    await transporter.verify();
+    console.log("Connexion SMTP établie");
+
+    /* const mailOptions = {
+      from: '"KidsWeek" <9ad624001@smtp-brevo.com>',
       to, // destinataire
       subject, // sujet
       text, // texte brut
       html, // optionnel : contenu HTML
-    };
+    };*/
 
     // 3. Envoyer le mail
-    const info = await transporter.sendMail(mailOptions);
+
+    const info = await transporter.sendMail({
+      from: '"KidsWeek" <aurelien05@gmail.com>',
+      to, // destinataire
+      subject, // sujet
+      text, // texte brut
+      html,
+    });
     return { result: true, message: "Email envoyé", info };
   } catch (err) {
     console.error(err);
