@@ -23,11 +23,11 @@ app.use(cors());
 app.use(helmet());
 
 app.use((req, res, next) => {
-  console.log(
-    `[${new Date().toISOString()}] ${req.method} ${res.statusCode} ${
-      req.url
-    } ${JSON.stringify(req.body)}`
-  );
+  // console.log(
+  //   `[${new Date().toISOString()}] ${req.method} ${res.statusCode} ${
+  //     req.url
+  //   } ${JSON.stringify(req.body)}`
+  // );
   next();
 });
 
@@ -50,5 +50,5 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  // console.log(`Server running on port ${PORT}`);
 });

@@ -164,18 +164,18 @@ router.post("/", authMiddleware, async (req, res) => {
     //Créer les invitations dans Notification
     if (Array.isArray(members) && members.length > 0) {
       const recipients = members.filter(
-        (m) => m.toString() !== ownerId.toString()
+        (m) => m.toString() !== ownerId.toString(),
       );
 
-      console.log("🎯 Création des invitations pour:", {
-        activity: name,
-        recipients,
-        owner: ownerId,
-      });
+      // console.log("🎯 Création des invitations pour:", {
+      //   activity: name,
+      //   recipients,
+      //   owner: ownerId,
+      // });
 
       for (const rec of recipients) {
         const message = `Vous êtes invité(e) à "${name}" le ${new Date(
-          dateBegin
+          dateBegin,
         ).toLocaleString("fr-FR")}.`;
 
         const notif = new Notification({
@@ -210,7 +210,7 @@ router.post("/", authMiddleware, async (req, res) => {
           });
 
           const message = `Rappel : "${name}" programmé le ${new Date(
-            dateBegin
+            dateBegin,
           ).toLocaleString("fr-FR")}.`;
 
           if (!exists) {
@@ -373,7 +373,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
             dateFin: dateEndRecurrence,
             days: recurrence,
           },
-          { overwrite: false }
+          { overwrite: false },
         );
       } else {
         const newRecurrence = new Recurrence({
@@ -417,7 +417,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
     for (const rec of added) {
       if (rec === activity.owner.toString()) continue;
       const message = `Vous êtes invité(e) à "${activity.name}" le ${new Date(
-        activity.dateBegin
+        activity.dateBegin,
       ).toLocaleString("fr-FR")}.`;
       const exists = await Notification.findOne({
         memberId: rec,
@@ -475,7 +475,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
         for (const rec of recipients) {
           const message = `Rappel : "${activity.name}" programmé le ${new Date(
-            activity.dateBegin
+            activity.dateBegin,
           ).toLocaleString("fr-FR")}.`;
 
           const notif = new Notification({
@@ -506,7 +506,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
         activityId: activity._id,
         type: "reminder",
       });
-      console.log("🗑️ Reminder supprimé, notifications supprimées");
+      // console.log("🗑️ Reminder supprimé, notifications supprimées");
     }
 
     const populatedActivity = await Activity.findById(updatedActivity._id)
@@ -674,7 +674,7 @@ router.put("/:activityId/tasks/:taskId", authMiddleware, async (req, res) => {
     const updatedTask = await Task.findByIdAndUpdate(
       taskId,
       { isOk },
-      { new: true }
+      { new: true },
     );
     if (!updatedTask)
       return res
@@ -689,7 +689,7 @@ router.put("/:activityId/tasks/:taskId", authMiddleware, async (req, res) => {
   } catch (err) {
     console.error(
       "Erreur dans PUT /activities/:activityId/tasks/:taskId :",
-      err
+      err,
     );
     res.status(500).json({ result: false, message: err.message });
   }

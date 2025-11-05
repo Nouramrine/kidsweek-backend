@@ -15,14 +15,14 @@ router.post("/", authMiddleware, (req, res) => {
     return;
   }
   const memberId = req.member._id;
-  const { firstName, lastName, color, isChildren } = req.body
+  const { firstName, lastName, color, isChildren } = req.body;
 
   const newMember = new Member({
     firstName,
     lastName,
     isChildren,
     color,
-    authorizations: [ { member: memberId, level: 'admin'} ],
+    authorizations: [{ member: memberId, level: "admin" }],
   });
   newMember.save().then((data) => {
     res.json({ result: true, member: data });
@@ -38,44 +38,52 @@ router.get("/", authMiddleware, async (req, res) => {
       { $match: { "authorizations.member": memberId } },
 
       // Étape 2 : union avec les membres des zones où on a une authorization
-      { $unionWith: {
+      {
+        $unionWith: {
           coll: "zones",
           pipeline: [
             // récupérer les zones où memberId a une authorization
             { $match: { "authorizations.member": memberId } },
 
             // récupérer tous les IDs des membres de la zone
-            { $project: { 
+            {
+              $project: {
                 userIds: {
                   $map: {
                     input: "$authorizations",
                     as: "auth",
-                    in: "$$auth.member"
-                  }
-                }
-            }},
+                    in: "$$auth.member",
+                  },
+                },
+              },
+            },
 
             // déplier les IDs pour un document par userId
             { $unwind: "$userIds" },
 
             // récupérer les documents Member correspondants
-            { $lookup: {
+            {
+              $lookup: {
                 from: "members",
                 localField: "userIds",
                 foreignField: "_id",
-                as: "member"
-            }},
+                as: "member",
+              },
+            },
             { $unwind: "$member" },
-            { $replaceRoot: { newRoot: "$member" } }
-          ]
-      }},
+            { $replaceRoot: { newRoot: "$member" } },
+          ],
+        },
+      },
 
       // Étape 3 : enlever les doublons
-      { $group: {
+      {
+        $group: {
           _id: "$_id",
-          doc: { $first: "$$ROOT" }
-      }},
-      { $replaceRoot: { newRoot: "$doc" } }, 
+          doc: { $first: "$$ROOT" },
+        },
+      },
+      { $replaceRoot: { newRoot: "$doc" } },
 
       // Étape 4 : exclure le membre connecté
       { $match: { _id: { $ne: memberId } } },
@@ -110,14 +118,15 @@ router.put("/:memberId", authMiddleware, async (req, res) => {
   }
 });
 
-
 // delete member
 router.delete("/:memberId", authMiddleware, async (req, res) => {
   try {
     const memberId = req.params.memberId;
     const deletedMember = await Member.findByIdAndDelete(memberId);
     if (!deletedMember) {
-      return res.status(404).json({ result: false, error: "Membre non trouvé." });
+      return res
+        .status(404)
+        .json({ result: false, error: "Membre non trouvé." });
     }
     res.json({ result: true, member: deletedMember });
   } catch (err) {
@@ -125,9 +134,73 @@ router.delete("/:memberId", authMiddleware, async (req, res) => {
   }
 });
 
-// Signup
+//Dismiss tutorial tooltip
+router.put("/tutorial/dismiss", authMiddleware, async (req, res) => {
+  try {
+    const { tooltipId } = req.body;
+    if (!tooltipId) {
+      return res.json({ result: false, error: "tooltipId manquant" });
+    }
+    const memberId = req.member._id;
+    const member = await Member.findById(memberId);
+
+    if (!member) {
+      return res
+        .status(404)
+        .json({ result: false, error: "Membre non trouvé" });
+    }
+
+    //initialiser tutorialState si inexistant
+    if (!member.tutorialState) {
+      member.tutorialState = new Map();
+    }
+    let dismissedTooltips = member.tutorialState.get("dismissedTooltips") || [];
+    //ajout de tooltipId s'il n'est pas déja present
+    if (!dismissedTooltips.includes(tooltipId)) {
+      dismissedTooltips.push(tooltipId);
+      member.tutorialState.set("dismissedTooltips", dismissedTooltips);
+      await member.save();
+    }
+    res.json({
+      result: true,
+      tutorialState: Object.fromEntries(member.tutorialState),
+    });
+  } catch (err) {
+    res.status(500).json({ restult: false, error: err.message });
+  }
+});
+
+//Get tutorial state
+router.get("/tutorial/state", authMiddleware, async (req, res) => {
+  try {
+    const memberId = req.member._id;
+    const member = await Member.findById(memberId);
+
+    if (!member) {
+      return res
+        .status(404)
+        .json({ result: false, error: "Membre non trouvé" });
+    }
+    const tutorialState = member.tutorialState || new Map();
+
+    res.json({
+      result: true,
+      tutorialState: Object.fromEntries(tutorialState),
+    });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
+});
+
+// Signup + tutorialState
 router.post("/signup", async (req, res) => {
-  if (!checkBody(req.body, ["firstName", "lastName", "email", "password"], ['email'])) {
+  if (
+    !checkBody(
+      req.body,
+      ["firstName", "lastName", "email", "password"],
+      ["email"]
+    )
+  ) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
@@ -142,6 +215,7 @@ router.post("/signup", async (req, res) => {
     let invite = null;
     let savedMember = null;
     if (inviteToken) {
+<<<<<<< HEAD
       invite = await Invite.findOne({ token: inviteToken, status: 'pending' }).populate('inviter');
       if (!invite) {
         return res.json({ result: false, error: "Erreur de récupération de l'invitation" });  
@@ -181,34 +255,99 @@ router.post("/signup", async (req, res) => {
     res.json({ 
       result: true, 
       member: { firstName: fName, lastName: lName, email: memberEmail, token } 
+=======
+      invite = await Invite.findOne({ token: inviteToken, status: "pending" });
+      if (!invite) {
+        return res.json({
+          result: false,
+          error: "Token d'invitation invalide ou déjà utilisé",
+        });
+      }
+      if (invite.expiresAt && new Date() > invite.expiresAt) {
+        return res.json({
+          result: false,
+          error: "Le token d'invitation a expiré",
+        });
+      }
+    }
+
+    // Créer le nouveau membre
+    const hash = bcrypt.hashSync(password, 10);
+    const newMember = new Member({
+      firstName,
+      lastName,
+      email,
+      password: hash,
+      token: uid2(32),
+      tutorialState: new Map([["dismissedTooltips", []]]),
     });
-    
+
+    const savedMember = await newMember.save();
+
+    // Si invitation, mettre à jour l'invite avec le membre créé
+    if (invite) {
+      await Invite.findByIdAndUpdate(invite._id, {
+        memberId: savedMember._id,
+        used: true,
+        usedAt: new Date(),
+      });
+
+      // Optionnel : créer une relation entre l'invitant et l'invité
+      // Par exemple, ajouter dans une collection de relations familiales
+      if (invite.invitedId) {
+        // Logique pour lier les deux membres (famille, amis, etc.)
+        // await createRelation(invite.invitedId, savedMember._id);
+      }
+    }
+
+    const {
+      firstName: fName,
+      lastName: lName,
+      email: memberEmail,
+      token,
+    } = savedMember;
+    res.json({
+      result: true,
+      member: { firstName: fName, lastName: lName, email: memberEmail, token },
+      invitation: invite ? { invitedBy: invite.invitedId } : null,
+>>>>>>> 58742dd (upgraded tutorial)
+    });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
 });
 
-// Signin
-router.post("/signin", (req, res) => {
-  if (!checkBody(req.body, ["email", "password"], ['email'])) {
+// Signin + tutorialState
+router.post("/signin", async (req, res) => {
+  if (!checkBody(req.body, ["email", "password"], ["email"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
-  Member.findOne({
-    email: req.body.email,
-  }).then((data) => {
+
+  try {
+    const data = await Member.findOne({ email: req.body.email });
+
     if (data && bcrypt.compareSync(req.body.password, data.password)) {
+      // Initialiser tutorialState si inexistant (pour anciens comptes)
+      if (!data.tutorialState) {
+        data.tutorialState = new Map([["dismissedTooltips", []]]);
+        await data.save();
+      }
+
       const memberData = {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
         token: data.token,
+        tutorialState: Object.fromEntries(data.tutorialState), // 🆕 Renvoyer le state
       };
       res.json({ result: true, member: memberData });
     } else {
       res.json({ result: false, error: "Utilisateur introuvable" });
     }
-  });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
 });
 
 router.get("/:email", async (req, res) => {
