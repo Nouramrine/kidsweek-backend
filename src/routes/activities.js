@@ -274,7 +274,7 @@ router.get("/notifications", authMiddleware, async (req, res) => {
       memberId,
       type: "reminder",
       status: "pending",
-      "meta.reminderDate": { $gte: new Date(Date.now() - 5 * 60 * 1000) }, // ✅ Filtre les reminders obsolètes
+      "meta.reminderDate": { $lte: new Date() },
     })
       .populate("activityId")
       .lean();
