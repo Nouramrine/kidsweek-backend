@@ -110,7 +110,13 @@ router.get("/", authMiddleware, async (req, res) => {
           // Étape 5 : ajouter le booléen isCurrent
           isCurrent: { $eq: ["$_id", memberId] },
         },
-      }
+      },
+      {
+        $sort: {
+          isChildren: 1, 
+          authLevel: -1,
+        },
+      },
     ]);
     res.json({ result: true, members });
   } catch (err) {

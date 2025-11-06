@@ -85,6 +85,16 @@ const getZones = async ( authMemberId, zoneId = null ) => {
             }
           }
         }
+      },
+      {
+        $set: {
+          members: {
+            $sortArray: {
+              input: "$members",
+              sortBy: { isChildren: 1, authLevel: -1 } 
+            }
+          }
+        }
       }
     ])
   return zones;
