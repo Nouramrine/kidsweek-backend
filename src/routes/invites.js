@@ -9,9 +9,8 @@ const { sendInvite } = require("../modules/mailer");
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const invites = await Invite.find({
-      $or: { inviter: req.member._id, invited: req.member._id },
-    });
-    console.log(invites)
+      $or: [{ inviter: req.member._id }, { invited: req.member._id }]
+    }).populate('inviter').populate('invited').lean();
     res.json({ result: true, invites });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
