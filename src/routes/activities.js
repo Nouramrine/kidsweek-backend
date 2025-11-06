@@ -155,7 +155,7 @@ router.post("/", authMiddleware, async (req, res) => {
       taskIds: createdTaskIds,
       recurrence: createdRecurrenceId,
       owner: ownerId,
-      members: [],
+      members: members,
       color: color || "#ccc",
     });
 
