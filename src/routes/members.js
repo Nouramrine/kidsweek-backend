@@ -319,7 +319,7 @@ router.post("/signup", async (req, res) => {
 
 // Signin + tutorialState
 router.post("/signin", async (req, res) => {
-  if (!checkBody(req.body, ["email", "password"], ["email"])) {
+  if (!checkBody(req.body, ["email", "password"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
