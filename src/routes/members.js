@@ -85,10 +85,10 @@ router.get("/", authMiddleware, async (req, res) => {
       },
       { $replaceRoot: { newRoot: "$doc" } },
 
-      // Étape 5 : ajouter le niveau d'autorisation de memberId sur chaque membre
+      // Étape 4 : ajouter le niveau d'autorisation de memberId sur chaque membre
       {
         $addFields: {
-          authorizationLevel: {
+          authLevel: {
             $let: {
               vars: {
                 auth: {
@@ -107,9 +107,10 @@ router.get("/", authMiddleware, async (req, res) => {
               in: "$$auth.level",
             },
           },
+          // Étape 5 : ajouter le booléen isCurrent
           isCurrent: { $eq: ["$_id", memberId] },
         },
-      },
+      }
     ]);
     res.json({ result: true, members });
   } catch (err) {
