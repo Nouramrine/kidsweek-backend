@@ -18,12 +18,12 @@ const sendMail = async (emailData) => {
       logger: true,
       debug: true,
     });
-    console.log("🔄 Test de connexion...");
+    //console.log("🔄 Test de connexion...");
     await transporter.verify();
-    console.log("✅ Connexion réussie !");
+    //console.log("✅ Connexion réussie !");
 
     await transporter.verify();
-    console.log("Connexion SMTP établie");
+    //console.log("Connexion SMTP établie");
 
     /* const mailOptions = {
       from: '"KidsWeek" <9ad624001@smtp-brevo.com>',
