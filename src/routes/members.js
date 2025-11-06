@@ -85,8 +85,31 @@ router.get("/", authMiddleware, async (req, res) => {
       },
       { $replaceRoot: { newRoot: "$doc" } },
 
-      // Étape 4 : exclure le membre connecté
-      { $match: { _id: { $ne: memberId } } },
+      // Étape 5 : ajouter le niveau d'autorisation de memberId sur chaque membre
+      {
+        $addFields: {
+          authorizationLevel: {
+            $let: {
+              vars: {
+                auth: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$authorizations",
+                        as: "a",
+                        cond: { $eq: ["$$a.member", memberId] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+              },
+              in: "$$auth.level",
+            },
+          },
+          isCurrent: { $eq: ["$_id", memberId] },
+        },
+      },
     ]);
     res.json({ result: true, members });
   } catch (err) {
