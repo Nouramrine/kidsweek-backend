@@ -113,7 +113,7 @@ router.get("/", authMiddleware, async (req, res) => {
       },
       {
         $sort: {
-          isChildren: 1, 
+          isChildren: 1,
           authLevel: -1,
         },
       },
@@ -228,7 +228,7 @@ router.post("/signup", async (req, res) => {
     !checkBody(
       req.body,
       ["firstName", "lastName", "email", "password"],
-      ["email"]
+      ["email"],
     )
   ) {
     res.json({ result: false, error: "Champs manquants ou vides" });
@@ -245,28 +245,33 @@ router.post("/signup", async (req, res) => {
     let invite = null;
     let savedMember = null;
     if (inviteToken) {
-<<<<<<< HEAD
-      invite = await Invite.findOne({ token: inviteToken, status: 'pending' }).populate('inviter');
+      invite = await Invite.findOne({
+        token: inviteToken,
+        status: "pending",
+      }).populate("inviter");
       if (!invite) {
-        return res.json({ result: false, error: "Erreur de récupération de l'invitation" });  
+        return res.json({
+          result: false,
+          error: "Erreur de récupération de l'invitation",
+        });
       }
       // Maj du membre avec les infos signUp
-      const member = await Member.findById(invite.invited._id)
+      const member = await Member.findById(invite.invited._id);
       const hash = bcrypt.hashSync(password, 10);
       member.firstName = firstName;
       member.lastName = lastName;
       member.email = email;
       member.password = hash;
-      member.type = 'auth'
-      member.token = uid2(32)
-      savedMember = await member.save()
-      if(savedMember && invite) {
+      member.type = "auth";
+      member.token = uid2(32);
+      savedMember = await member.save();
+      if (savedMember && invite) {
         // Validation de l'invitation
         await Invite.findByIdAndUpdate(invite._id, {
-          status: 'accepted'
+          status: "accepted",
         });
       } else {
-        return res.json({ result: false, error: "Erreur de maj du membre" });  
+        return res.json({ result: false, error: "Erreur de maj du membre" });
       }
     } else {
       // Créer le nouveau membre
@@ -280,55 +285,6 @@ router.post("/signup", async (req, res) => {
       });
       savedMember = await newMember.save();
     }
-    
-    const { firstName: fName, lastName: lName, email: memberEmail, token } = savedMember;
-    res.json({ 
-      result: true, 
-      member: { firstName: fName, lastName: lName, email: memberEmail, token } 
-=======
-      invite = await Invite.findOne({ token: inviteToken, status: "pending" });
-      if (!invite) {
-        return res.json({
-          result: false,
-          error: "Token d'invitation invalide ou déjà utilisé",
-        });
-      }
-      if (invite.expiresAt && new Date() > invite.expiresAt) {
-        return res.json({
-          result: false,
-          error: "Le token d'invitation a expiré",
-        });
-      }
-    }
-
-    // Créer le nouveau membre
-    const hash = bcrypt.hashSync(password, 10);
-    const newMember = new Member({
-      firstName,
-      lastName,
-      email,
-      password: hash,
-      token: uid2(32),
-      tutorialState: new Map([["dismissedTooltips", []]]),
-    });
-
-    const savedMember = await newMember.save();
-
-    // Si invitation, mettre à jour l'invite avec le membre créé
-    if (invite) {
-      await Invite.findByIdAndUpdate(invite._id, {
-        memberId: savedMember._id,
-        used: true,
-        usedAt: new Date(),
-      });
-
-      // Optionnel : créer une relation entre l'invitant et l'invité
-      // Par exemple, ajouter dans une collection de relations familiales
-      if (invite.invitedId) {
-        // Logique pour lier les deux membres (famille, amis, etc.)
-        // await createRelation(invite.invitedId, savedMember._id);
-      }
-    }
 
     const {
       firstName: fName,
@@ -339,8 +295,6 @@ router.post("/signup", async (req, res) => {
     res.json({
       result: true,
       member: { firstName: fName, lastName: lName, email: memberEmail, token },
-      invitation: invite ? { invitedBy: invite.invitedId } : null,
->>>>>>> 58742dd (upgraded tutorial)
     });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
