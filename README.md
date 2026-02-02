@@ -6,8 +6,22 @@ avec une approche simple, ludique et collaborative.
 
 Ce repository contient l’API backend du projet, développée en Node.js / Express.
 
-🎯 Projet personnel full-stack, conçu et développé dans une logique proche
-d’un produit réel (architecture, sécurité, séparation front/back).
+---
+
+## 📌 Origine du projet
+
+KidsWeek est initialement né comme projet de fin de formation,
+réalisé en collaboration avec deux autres développeurs.
+
+À l’issue de la formation, j’ai repris le projet en main de manière individuelle :
+
+- sécurisation des accès et des secrets
+- nettoyage de l’historique Git
+- amélioration de l’architecture et de la documentation
+- poursuite du développement dans une logique produit
+
+Le projet est aujourd’hui maintenu et développé exclusivement par moi,
+dans une démarche professionnelle et orientée bonnes pratiques.
 
 ---
 
@@ -95,7 +109,7 @@ PORT=
 MONGO_URI=
 
 SMTP_USER=
-SMPT_PASS=
+SMTP_PASS=
 ```
 
 ### lancer le serveur en développement
@@ -128,5 +142,4 @@ Améliorations continues, nouvelles fonctionnalités en cours d’implémentatio
 Nour El Islam AMRINE
 Concepteur développeur d'application web & mobile - Full-stack JavaScript (MERN)
 
-Projet personnel réalisé dans une démarche professionnelle,
-orientée architecture, sécurité et bonnes pratiques backend.
+Projet personnel full-stack, repris et maintenu après une phase initiale de travail en équipe.
