@@ -107,9 +107,11 @@ env
 
 PORT=
 MONGO_URI=
+JWT_SECRET=
 
-SMTP_USER=
-SMTP_PASS=
+BREVO_API_KEY=xkeysib-xxxxxxxxxxxxxxxx
+BREVO_SENDER_EMAIL=ton-email-verifie@domaine.com
+BREVO_SENDER_NAME=KidsWeek
 ```
 
 ### lancer le serveur en développement
