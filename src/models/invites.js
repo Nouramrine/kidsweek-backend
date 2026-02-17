@@ -12,7 +12,7 @@ const inviteSchema = new Schema({
     enum: ["pending", "accepted", "rejected", "expired"],
     default: "pending",
   },
-  token: { type: String, default: uid2(32) },
+  token: { type: String, default: () => uid2(32) },
   invitedAt: { type: Date, default: Date.now },
   expiresAt: {
     type: Date,

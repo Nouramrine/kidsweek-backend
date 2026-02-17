@@ -9,8 +9,11 @@ const { sendInvite } = require("../modules/mailer");
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const invites = await Invite.find({
-      $or: [{ inviter: req.member._id }, { invited: req.member._id }]
-    }).populate('inviter').populate('invited').lean();
+      $or: [{ inviter: req.member._id }, { invited: req.member._id }],
+    })
+      .populate("inviter")
+      .populate("invited")
+      .lean();
     res.json({ result: true, invites });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
@@ -82,17 +85,34 @@ router.post("/", authMiddleware, async (req, res) => {
 // envoyer une invitation par mail
 router.post("/send", authMiddleware, async (req, res) => {
   try {
-    const { invite, url } = req.body;
-    invite.url = url;
-    const mailing = await sendInvite(invite);
+    const { inviteId, url } = req.body;
+
+    const invite = await Invite.findById(inviteId)
+      .populate("inviter")
+      .populate("invited");
+
+    if (!invite) {
+      return res.json({ result: false, error: "Invitation introuvable" });
+    }
+    if (invite.status !== "pending") {
+      return res.json({
+        result: false,
+        error: "Cette invitation n'est plus active",
+      });
+    }
+    if (invite.inviter._id.toString() !== req.member._id.toString()) {
+      return res.status(403).json({ result: false, error: "Non autorisé" });
+    }
+
+    const mailing = await sendInvite({ ...invite.toObject(), url });
+
     if (mailing.result) {
-      res.json({ result: true, invites: invite });
+      res.json({ result: true, invite });
     } else {
-      res.json({ result: false, error: "Echec mail" });
+      res.json({ result: false, error: "Échec de l'envoi du mail" });
     }
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
 });
-
 module.exports = router;

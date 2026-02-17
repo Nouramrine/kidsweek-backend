@@ -6,10 +6,10 @@ const authMiddleware = require("../middleware/auth");
 const Task = require("../models/tasks");
 const Recurrence = require("../models/recurrences");
 const Notification = require("../models/notifications");
-const Member = require("../models/members"); // ✅ AJOUT
+const Member = require("../models/members");
 const {
   notifyActivityInvitation,
-} = require("../../services/pushNotificationService"); // ✅ AJOUT
+} = require("../../services/pushNotificationService");
 
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
@@ -178,7 +178,7 @@ router.post("/", authMiddleware, async (req, res) => {
         await notif.save();
       }
 
-      // ✅ AJOUT : Envoyer les push aux membres invités
+      // Envoyer les push aux membres invités
       const invitedMembers = await Member.find({
         _id: { $in: recipients },
         pushToken: { $exists: true, $ne: null },
@@ -422,7 +422,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
         }
       }
 
-      // ✅ AJOUT : Envoyer les push aux nouveaux membres
+      // Envoyer les push aux nouveaux membres
       const addedMembers = await Member.find({
         _id: { $in: added },
         pushToken: { $exists: true, $ne: null },
