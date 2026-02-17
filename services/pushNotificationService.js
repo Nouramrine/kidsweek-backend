@@ -2,13 +2,6 @@ const { Expo } = require("expo-server-sdk");
 
 const expo = new Expo();
 
-/**
- * Envoie des notifications push à une liste de tokens
- * @param {Array<string>} pushTokens - Tokens Expo Push
- * @param {string} title - Titre
- * @param {string} body - Corps du message
- * @param {Object} data - Données additionnelles (type, activityId...)
- */
 const sendPushNotifications = async (pushTokens, title, body, data = {}) => {
   const validTokens = pushTokens.filter(
     (token) => token && Expo.isExpoPushToken(token),
@@ -45,12 +38,6 @@ const sendPushNotifications = async (pushTokens, title, body, data = {}) => {
   }
 };
 
-/**
- * Notifie les membres invités à une activité
- * @param {Object} activity - L'activité créée/modifiée
- * @param {Array} members - Membres à notifier (avec pushToken)
- * @param {Object} creator - Créateur de l'activité
- */
 const notifyActivityInvitation = async (activity, members, creator) => {
   const tokens = members
     .filter((m) => m.pushToken && m._id.toString() !== creator._id.toString())
@@ -69,11 +56,6 @@ const notifyActivityInvitation = async (activity, members, creator) => {
   );
 };
 
-/**
- * Notifie les membres d'un rappel d'activité
- * @param {Object} activity - L'activité à rappeler
- * @param {Array} members - Membres à notifier (avec pushToken)
- */
 const notifyActivityReminder = async (activity, members) => {
   const tokens = members.filter((m) => m.pushToken).map((m) => m.pushToken);
 

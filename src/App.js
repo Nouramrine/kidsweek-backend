@@ -24,7 +24,6 @@ app.use(cors());
 app.use(helmet());
 
 app.use((req, res, next) => {
-  // console.log(`[${new Date().toISOString()}] ${req.method} ${res.statusCode} ${req.url} ${JSON.stringify(req.body)}`);
   next();
 });
 
@@ -51,7 +50,7 @@ const PORT = process.env.PORT || 3000; // ✅ PORT défini depuis .env ou 3000 p
 
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
-  startReminderCron(); // ✅ Cron job démarré après le serveur
+  startReminderCron();
 });
 
 module.exports = app;

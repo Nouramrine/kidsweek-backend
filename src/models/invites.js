@@ -36,9 +36,8 @@ cron.schedule("0 * * * *", async () => {
       },
       {
         status: "expired",
-      }
+      },
     );
-    // console.log('Invitations expirées mises à jour');
   } catch (err) {
     console.error("Erreur mise à jour invitations:", err);
   }

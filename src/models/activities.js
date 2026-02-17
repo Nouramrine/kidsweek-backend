@@ -40,7 +40,7 @@ const activitySchema = new Schema({
   },
   reminderSent: {
     type: Boolean,
-    default: false, // ✅ Pour éviter d'envoyer le rappel push 2 fois
+    default: false,
   },
 });
 

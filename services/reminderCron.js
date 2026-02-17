@@ -3,12 +3,6 @@ const Member = require("../src/models/members");
 const Notification = require("../src/models/notifications");
 const { notifyActivityReminder } = require("./pushNotificationService");
 
-/**
- * Démarre le cron job de rappels d'activités
- * Se base sur les Notifications type "reminder" existantes en BDD
- * Utilise meta.pushSent pour éviter les doublons
- * S'exécute toutes les minutes
- */
 const startReminderCron = () => {
   console.log("⏰ Cron job de rappels démarré");
 

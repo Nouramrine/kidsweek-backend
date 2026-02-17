@@ -37,7 +37,7 @@ const notificationSchema = new Schema({
   },
   meta: {
     type: Schema.Types.Mixed,
-    default: null, //permet de stocker tout type d'infos spécifique à la notification
+    default: null,
   },
   createdAt: {
     type: Date,
