@@ -18,7 +18,7 @@ const memberSchema = new Schema(
     phoneNumber: String,
     zipCode: String,
     city: String,
-    avatar: String,
+    avatar: { type: String, default: "user" },
     color: String,
     authorizations: [authorizationSchema],
     isChildren: { type: Boolean, default: false },
@@ -33,7 +33,7 @@ const memberSchema = new Schema(
       },
     },
   },
-  { isTimeStamp: true }
+  { isTimeStamp: true },
 );
 
 const Member = mongoose.model("members", memberSchema);

@@ -128,7 +128,7 @@ router.get("/", authMiddleware, async (req, res) => {
 router.put("/:memberId", authMiddleware, async (req, res) => {
   try {
     const { memberId } = req.params;
-    const { firstName, lastName, color, isChildren } = req.body;
+    const { firstName, lastName, color, isChildren, avatar } = req.body;
 
     const member = await Member.findById(memberId);
     if (!member) {
@@ -139,6 +139,7 @@ router.put("/:memberId", authMiddleware, async (req, res) => {
     if (firstName) member.firstName = firstName;
     if (lastName) member.lastName = lastName;
     if (color) member.color = color;
+    if (avatar) member.avatar = avatar;
     member.isChildren = isChildren ? true : false;
 
     await member.save();
