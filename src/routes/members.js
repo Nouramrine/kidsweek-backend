@@ -7,7 +7,7 @@ const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 
-// Add member
+// ─── Créer un membre ─────────────────────────────────────────────────────────
 
 router.post("/", authMiddleware, (req, res) => {
   if (!checkBody(req.body, ["firstName", "lastName", "color"])) {
@@ -29,23 +29,18 @@ router.post("/", authMiddleware, (req, res) => {
   });
 });
 
-// Get members from zone and authorizations
+// ─── Récupérer les membres (zones + autorisations) ───────────────────────────
+
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
     const members = await Member.aggregate([
-      // Étape 1 : récupérer les utilisateurs sur lesquels on a une authorization
       { $match: { "authorizations.member": memberId } },
-
-      // Étape 2 : union avec les membres des zones où on a une authorization
       {
         $unionWith: {
           coll: "zones",
           pipeline: [
-            // récupérer les zones où memberId a une authorization
             { $match: { "authorizations.member": memberId } },
-
-            // récupérer tous les IDs des membres de la zone
             {
               $project: {
                 userIds: {
@@ -57,11 +52,7 @@ router.get("/", authMiddleware, async (req, res) => {
                 },
               },
             },
-
-            // déplier les IDs pour un document par userId
             { $unwind: "$userIds" },
-
-            // récupérer les documents Member correspondants
             {
               $lookup: {
                 from: "members",
@@ -75,8 +66,6 @@ router.get("/", authMiddleware, async (req, res) => {
           ],
         },
       },
-
-      // Étape 3 : enlever les doublons
       {
         $group: {
           _id: "$_id",
@@ -84,8 +73,6 @@ router.get("/", authMiddleware, async (req, res) => {
         },
       },
       { $replaceRoot: { newRoot: "$doc" } },
-
-      // Étape 4 : ajouter le niveau d'autorisation de memberId sur chaque membre
       {
         $addFields: {
           authLevel: {
@@ -107,7 +94,6 @@ router.get("/", authMiddleware, async (req, res) => {
               in: "$$auth.level",
             },
           },
-          // Étape 5 : ajouter le booléen isCurrent
           isCurrent: { $eq: ["$_id", memberId] },
         },
       },
@@ -124,48 +110,35 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// Modifier un membre
-router.put("/:memberId", authMiddleware, async (req, res) => {
+// ─── Routes statiques (AVANT les routes dynamiques /:id) ─────────────────────
+
+// Sauvegarder le token push
+router.put("/push-token", authMiddleware, async (req, res) => {
   try {
-    const { memberId } = req.params;
-    const { firstName, lastName, color, isChildren, avatar } = req.body;
+    const { pushToken } = req.body;
+    const memberId = req.member._id;
+
+    if (!pushToken) {
+      return res.json({ result: false, error: "Token manquant" });
+    }
 
     const member = await Member.findById(memberId);
     if (!member) {
       return res
         .status(404)
-        .json({ result: false, message: "Membre non trouvé." });
+        .json({ result: false, error: "Membre non trouvé" });
     }
-    if (firstName) member.firstName = firstName;
-    if (lastName) member.lastName = lastName;
-    if (color) member.color = color;
-    if (avatar) member.avatar = avatar;
-    member.isChildren = isChildren ? true : false;
 
+    member.pushToken = pushToken;
     await member.save();
-    res.json({ result: true, message: "Membre mise à jour.", member });
-  } catch (err) {
-    res.status(500).json({ result: false, message: err.message });
-  }
-});
 
-// delete member
-router.delete("/:memberId", authMiddleware, async (req, res) => {
-  try {
-    const memberId = req.params.memberId;
-    const deletedMember = await Member.findByIdAndDelete(memberId);
-    if (!deletedMember) {
-      return res
-        .status(404)
-        .json({ result: false, error: "Membre non trouvé." });
-    }
-    res.json({ result: true, member: deletedMember });
+    res.json({ result: true, message: "Token enregistré" });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
 });
 
-//Dismiss tutorial tooltip
+// Dismiss tutorial tooltip
 router.put("/tutorial/dismiss", authMiddleware, async (req, res) => {
   try {
     const { tooltipId } = req.body;
@@ -181,12 +154,10 @@ router.put("/tutorial/dismiss", authMiddleware, async (req, res) => {
         .json({ result: false, error: "Membre non trouvé" });
     }
 
-    //initialiser tutorialState si inexistant
     if (!member.tutorialState) {
       member.tutorialState = new Map();
     }
     let dismissedTooltips = member.tutorialState.get("dismissedTooltips") || [];
-    //ajout de tooltipId s'il n'est pas déja present
     if (!dismissedTooltips.includes(tooltipId)) {
       dismissedTooltips.push(tooltipId);
       member.tutorialState.set("dismissedTooltips", dismissedTooltips);
@@ -197,11 +168,11 @@ router.put("/tutorial/dismiss", authMiddleware, async (req, res) => {
       tutorialState: Object.fromEntries(member.tutorialState),
     });
   } catch (err) {
-    res.status(500).json({ restult: false, error: err.message });
+    res.status(500).json({ result: false, error: err.message });
   }
 });
 
-//Get tutorial state
+// Get tutorial state
 router.get("/tutorial/state", authMiddleware, async (req, res) => {
   try {
     const memberId = req.member._id;
@@ -223,7 +194,7 @@ router.get("/tutorial/state", authMiddleware, async (req, res) => {
   }
 });
 
-// Signup + tutorialState
+// Signup
 router.post("/signup", async (req, res) => {
   if (
     !checkBody(
@@ -256,7 +227,6 @@ router.post("/signup", async (req, res) => {
           error: "Erreur de récupération de l'invitation",
         });
       }
-      // Maj du membre avec les infos signUp
       const member = await Member.findById(invite.invited._id);
       const hash = bcrypt.hashSync(password, 10);
       member.firstName = firstName;
@@ -267,15 +237,11 @@ router.post("/signup", async (req, res) => {
       member.token = uid2(32);
       savedMember = await member.save();
       if (savedMember && invite) {
-        // Validation de l'invitation
-        await Invite.findByIdAndUpdate(invite._id, {
-          status: "accepted",
-        });
+        await Invite.findByIdAndUpdate(invite._id, { status: "accepted" });
       } else {
         return res.json({ result: false, error: "Erreur de maj du membre" });
       }
     } else {
-      // Créer le nouveau membre
       const hash = bcrypt.hashSync(password, 10);
       const newMember = new Member({
         firstName,
@@ -302,7 +268,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// Signin + tutorialState
+// Signin
 router.post("/signin", async (req, res) => {
   if (!checkBody(req.body, ["email", "password"])) {
     res.json({ result: false, error: "Champs manquants ou vides" });
@@ -313,7 +279,6 @@ router.post("/signin", async (req, res) => {
     const data = await Member.findOne({ email: req.body.email });
 
     if (data && bcrypt.compareSync(req.body.password, data.password)) {
-      // Initialiser tutorialState si inexistant (pour anciens comptes)
       if (!data.tutorialState) {
         data.tutorialState = new Map([["dismissedTooltips", []]]);
         await data.save();
@@ -324,7 +289,7 @@ router.post("/signin", async (req, res) => {
         lastName: data.lastName,
         email: data.email,
         token: data.token,
-        tutorialState: Object.fromEntries(data.tutorialState), // 🆕 Renvoyer le state
+        tutorialState: Object.fromEntries(data.tutorialState),
       };
       res.json({ result: true, member: memberData });
     } else {
@@ -335,6 +300,50 @@ router.post("/signin", async (req, res) => {
   }
 });
 
+// ─── Routes dynamiques (APRÈS les routes statiques) ──────────────────────────
+
+// Modifier un membre
+router.put("/:memberId", authMiddleware, async (req, res) => {
+  try {
+    const { memberId } = req.params;
+    const { firstName, lastName, color, isChildren, avatar } = req.body;
+
+    const member = await Member.findById(memberId);
+    if (!member) {
+      return res
+        .status(404)
+        .json({ result: false, message: "Membre non trouvé." });
+    }
+    if (firstName) member.firstName = firstName;
+    if (lastName) member.lastName = lastName;
+    if (color) member.color = color;
+    if (avatar) member.avatar = avatar;
+    member.isChildren = isChildren ? true : false;
+
+    await member.save();
+    res.json({ result: true, message: "Membre mise à jour.", member });
+  } catch (err) {
+    res.status(500).json({ result: false, message: err.message });
+  }
+});
+
+// Supprimer un membre
+router.delete("/:memberId", authMiddleware, async (req, res) => {
+  try {
+    const memberId = req.params.memberId;
+    const deletedMember = await Member.findByIdAndDelete(memberId);
+    if (!deletedMember) {
+      return res
+        .status(404)
+        .json({ result: false, error: "Membre non trouvé." });
+    }
+    res.json({ result: true, member: deletedMember });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
+});
+
+// Récupérer un membre par email
 router.get("/:email", async (req, res) => {
   const email = req.params.email;
   if (!email) {

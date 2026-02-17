@@ -6,6 +6,10 @@ const authMiddleware = require("../middleware/auth");
 const Task = require("../models/tasks");
 const Recurrence = require("../models/recurrences");
 const Notification = require("../models/notifications");
+const Member = require("../models/members"); // ✅ AJOUT
+const {
+  notifyActivityInvitation,
+} = require("../../services/pushNotificationService"); // ✅ AJOUT
 
 // Récupérer les activités à venir du membre
 router.get("/", authMiddleware, async (req, res) => {
@@ -14,7 +18,6 @@ router.get("/", authMiddleware, async (req, res) => {
     const now = new Date();
     const includePast = req.query.includePast === "true";
 
-    // 1️⃣ Récupérer les activités que le membre a acceptées
     const acceptedActivityIds = await Notification.find({
       memberId,
       type: "invitation",
@@ -22,12 +25,8 @@ router.get("/", authMiddleware, async (req, res) => {
       "meta.accepted": true,
     }).distinct("activityId");
 
-    // 2️⃣ Filtrer les activités pour le planning
     const filter = {
-      $or: [
-        { owner: memberId }, // Toutes les activités où il est propriétaire
-        { _id: { $in: acceptedActivityIds } }, // Les activités qu’il a acceptées
-      ],
+      $or: [{ owner: memberId }, { _id: { $in: acceptedActivityIds } }],
     };
 
     if (!includePast) {
@@ -104,7 +103,7 @@ router.post("/", authMiddleware, async (req, res) => {
       tasks,
       recurrence,
       dateEndRecurrence,
-      members, // IDs des invités
+      members,
       color,
     } = req.body;
 
@@ -117,21 +116,18 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const ownerId = req.member._id;
 
-    //Créer les tâches si présentes
+    // Créer les tâches si présentes
     let createdTaskIds = [];
     if (Array.isArray(tasks) && tasks.length > 0) {
       for (const t of tasks) {
         if (!t.text) continue;
-        const newTask = new Task({
-          name: t.text,
-          isOk: t.checked || false,
-        });
+        const newTask = new Task({ name: t.text, isOk: t.checked || false });
         const saved = await newTask.save();
         createdTaskIds.push(saved._id);
       }
     }
 
-    //Créer la récurrence si définie
+    // Créer la récurrence si définie
     let createdRecurrenceId = null;
     if (recurrence) {
       const newRecurrence = new Recurrence({
@@ -143,7 +139,7 @@ router.post("/", authMiddleware, async (req, res) => {
       createdRecurrenceId = saved._id;
     }
 
-    // 3️⃣ Créer l'activité (sans invités)
+    // Créer l'activité
     const newActivity = new Activity({
       name,
       place: place || "",
@@ -161,23 +157,14 @@ router.post("/", authMiddleware, async (req, res) => {
 
     const savedActivity = await newActivity.save();
 
-    //Créer les invitations dans Notification
+    // Créer les invitations dans Notification
     if (Array.isArray(members) && members.length > 0) {
       const recipients = members.filter(
         (m) => m.toString() !== ownerId.toString(),
       );
 
-      // console.log("🎯 Création des invitations pour:", {
-      //   activity: name,
-      //   recipients,
-      //   owner: ownerId,
-      // });
-
       for (const rec of recipients) {
-        const message = `Vous êtes invité(e) à "${name}" le ${new Date(
-          dateBegin,
-        ).toLocaleString("fr-FR")}.`;
-
+        const message = `Vous êtes invité(e) à "${name}" le ${new Date(dateBegin).toLocaleString("fr-FR")}.`;
         const notif = new Notification({
           memberId: rec,
           activityId: savedActivity._id,
@@ -190,9 +177,22 @@ router.post("/", authMiddleware, async (req, res) => {
         });
         await notif.save();
       }
+
+      // ✅ AJOUT : Envoyer les push aux membres invités
+      const invitedMembers = await Member.find({
+        _id: { $in: recipients },
+        pushToken: { $exists: true, $ne: null },
+      });
+      if (invitedMembers.length > 0) {
+        await notifyActivityInvitation(
+          savedActivity,
+          invitedMembers,
+          req.member,
+        );
+      }
     }
 
-    //Créer les reminders si nécessaire
+    // Créer les reminders si nécessaire
     if (reminder) {
       const remDate = new Date(reminder);
       const now = new Date();
@@ -209,9 +209,7 @@ router.post("/", authMiddleware, async (req, res) => {
             type: "reminder",
           });
 
-          const message = `Rappel : "${name}" programmé le ${new Date(
-            dateBegin,
-          ).toLocaleString("fr-FR")}.`;
+          const message = `Rappel : "${name}" programmé le ${new Date(dateBegin).toLocaleString("fr-FR")}.`;
 
           if (!exists) {
             const notif = new Notification({
@@ -234,8 +232,7 @@ router.post("/", authMiddleware, async (req, res) => {
     res.json({
       result: true,
       activity: savedActivity,
-      message:
-        "Activité créée avec succès. Les invitations sont envoyées, elles apparaîtront dans la modal de notifications.",
+      message: "Activité créée avec succès. Les invitations sont envoyées.",
     });
   } catch (err) {
     console.error("Erreur dans POST /activities :", err);
@@ -259,16 +256,6 @@ router.get("/notifications", authMiddleware, async (req, res) => {
       .populate("sender", "firstName lastName email")
       .populate("activityId")
       .lean();
-
-    /*console.log(
-      "🔍 Invitations trouvées en base:",
-      invitations.map((inv) => ({
-        id: inv._id,
-        memberId: inv.memberId,
-        activityName: inv.activityId?.name,
-        sender: inv.sender?.firstName,
-      }))
-    );*/
 
     const reminders = await Notification.find({
       memberId,
@@ -389,10 +376,8 @@ router.put("/:id", authMiddleware, async (req, res) => {
       updatedRecurrenceId = null;
     }
 
-    // Sauvegarder ancien ensemble de membres pour diff
     const previousMembers = activity.members?.map((m) => m.toString()) || [];
 
-    // Mettre à jour l'activité
     activity.name = name || activity.name;
     activity.place = place !== undefined ? place : activity.place;
     activity.dateBegin = dateBegin ? new Date(dateBegin) : activity.dateBegin;
@@ -407,34 +392,43 @@ router.put("/:id", authMiddleware, async (req, res) => {
 
     const updatedActivity = await activity.save();
 
-    // Notifications pour membres ajoutés
     const newMembers = Array.isArray(members)
       ? members.map((m) => m.toString())
       : previousMembers;
     const added = newMembers.filter((m) => !previousMembers.includes(m));
     const removed = previousMembers.filter((m) => !newMembers.includes(m));
 
-    for (const rec of added) {
-      if (rec === activity.owner.toString()) continue;
-      const message = `Vous êtes invité(e) à "${activity.name}" le ${new Date(
-        activity.dateBegin,
-      ).toLocaleString("fr-FR")}.`;
-      const exists = await Notification.findOne({
-        memberId: rec,
-        activityId: activity._id,
-        type: "invitation",
-      });
-      if (!exists) {
-        const notif = new Notification({
+    // Notifications pour membres ajoutés + push
+    if (added.length > 0) {
+      for (const rec of added) {
+        if (rec === activity.owner.toString()) continue;
+        const message = `Vous êtes invité(e) à "${activity.name}" le ${new Date(activity.dateBegin).toLocaleString("fr-FR")}.`;
+        const exists = await Notification.findOne({
           memberId: rec,
           activityId: activity._id,
-          sender: activity.owner,
           type: "invitation",
-          message,
-          criticality: "medium",
-          status: "pending",
         });
-        await notif.save();
+        if (!exists) {
+          const notif = new Notification({
+            memberId: rec,
+            activityId: activity._id,
+            sender: activity.owner,
+            type: "invitation",
+            message,
+            criticality: "medium",
+            status: "pending",
+          });
+          await notif.save();
+        }
+      }
+
+      // ✅ AJOUT : Envoyer les push aux nouveaux membres
+      const addedMembers = await Member.find({
+        _id: { $in: added },
+        pushToken: { $exists: true, $ne: null },
+      });
+      if (addedMembers.length > 0) {
+        await notifyActivityInvitation(activity, addedMembers, req.member);
       }
     }
 
@@ -449,17 +443,8 @@ router.put("/:id", authMiddleware, async (req, res) => {
     if (reminder) {
       const remDate = new Date(reminder);
       const now = new Date();
-
-      // ✅ Même tolérance que pour POST
-      const MIN_DIFF_MS = -60000; // -60 secondes
+      const MIN_DIFF_MS = -60000;
       const diff = remDate - now;
-
-      // console.log("⏰ Update Reminder check:", {
-      //   reminderDate: remDate.toISOString(),
-      //   now: now.toISOString(),
-      //   diff: diff,
-      //   willCreate: diff >= MIN_DIFF_MS,
-      // });
 
       if (diff >= MIN_DIFF_MS) {
         const recipients =
@@ -467,17 +452,13 @@ router.put("/:id", authMiddleware, async (req, res) => {
             ? members
             : [activity.owner];
 
-        // ✅ IMPORTANT : Supprimer les anciennes notifications reminder
         await Notification.deleteMany({
           activityId: activity._id,
           type: "reminder",
         });
 
         for (const rec of recipients) {
-          const message = `Rappel : "${activity.name}" programmé le ${new Date(
-            activity.dateBegin,
-          ).toLocaleString("fr-FR")}.`;
-
+          const message = `Rappel : "${activity.name}" programmé le ${new Date(activity.dateBegin).toLocaleString("fr-FR")}.`;
           const notif = new Notification({
             memberId: rec,
             activityId: activity._id,
@@ -494,19 +475,16 @@ router.put("/:id", authMiddleware, async (req, res) => {
           await notif.save();
         }
       } else {
-        // Si le reminder est passé, supprimer les notifications existantes
         await Notification.deleteMany({
           activityId: activity._id,
           type: "reminder",
         });
       }
     } else {
-      // Si plus de reminder, supprimer les notifications
       await Notification.deleteMany({
         activityId: activity._id,
         type: "reminder",
       });
-      // console.log("🗑️ Reminder supprimé, notifications supprimées");
     }
 
     const populatedActivity = await Activity.findById(updatedActivity._id)
@@ -531,7 +509,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 router.put("/:id/validate", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { validate } = req.body; // true = accepter, false = refuser
+    const { validate } = req.body;
     const memberId = req.member._id;
 
     const activity = await Activity.findById(id).populate("owner");
@@ -540,7 +518,6 @@ router.put("/:id/validate", authMiddleware, async (req, res) => {
         .status(404)
         .json({ result: false, message: "Activité non trouvée." });
 
-    // Vérifier s'il existe une invitation en attente pour ce membre
     const invitation = await Notification.findOne({
       activityId: activity._id,
       memberId,
@@ -555,7 +532,6 @@ router.put("/:id/validate", authMiddleware, async (req, res) => {
       });
     }
 
-    // Si accepté, ajouter le membre à activity.members
     if (validate) {
       if (!activity.members.includes(memberId)) {
         activity.members.push(memberId);
@@ -563,12 +539,10 @@ router.put("/:id/validate", authMiddleware, async (req, res) => {
       }
     }
 
-    // Mettre à jour la notification d'invitation
     invitation.status = "done";
     invitation.meta = { respondedAt: new Date(), accepted: !!validate };
     await invitation.save();
 
-    // Informer le propriétaire si nécessaire
     if (activity.owner) {
       const message = `${req.member.firstName || "Un utilisateur"} a ${
         validate ? "accepté" : "refusé"

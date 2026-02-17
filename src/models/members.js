@@ -32,6 +32,7 @@ const memberSchema = new Schema(
         dismissedTooltips: [],
       },
     },
+    pushToken: { type: String, default: null },
   },
   { isTimeStamp: true },
 );

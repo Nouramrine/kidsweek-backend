@@ -38,6 +38,10 @@ const activitySchema = new Schema({
   color: {
     type: String,
   },
+  reminderSent: {
+    type: Boolean,
+    default: false, // ✅ Pour éviter d'envoyer le rappel push 2 fois
+  },
 });
 
 const Activity = mongoose.model("activities", activitySchema);
