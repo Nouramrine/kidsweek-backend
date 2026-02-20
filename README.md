@@ -107,7 +107,7 @@ env
 
 PORT=
 MONGO_URI=
-JWT_SECRET=
+
 
 BREVO_API_KEY=xkeysib-xxxxxxxxxxxxxxxx
 BREVO_SENDER_EMAIL=ton-email-verifie@domaine.com
