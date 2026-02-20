@@ -84,12 +84,17 @@ router.post("/", authMiddleware, async (req, res) => {
 
 // envoyer une invitation par mail
 router.post("/send", authMiddleware, async (req, res) => {
+  console.log("📧 === ROUTE /invites/send APPELÉE ===");
+  console.log("📦 Body reçu:", req.body);
+
   try {
     const { inviteId, url } = req.body;
 
     const invite = await Invite.findById(inviteId)
       .populate("inviter")
       .populate("invited");
+
+    console.log("🔍 Invitation trouvée:", invite ? "✅" : "❌");
 
     if (!invite) {
       return res.json({ result: false, error: "Invitation introuvable" });
@@ -104,7 +109,9 @@ router.post("/send", authMiddleware, async (req, res) => {
       return res.status(403).json({ result: false, error: "Non autorisé" });
     }
 
+    console.log("📨 Envoi du mail à:", invite.email);
     const mailing = await sendInvite({ ...invite.toObject(), url });
+    console.log("✉️ Résultat envoi:", mailing);
 
     if (mailing.result) {
       res.json({ result: true, invite });
@@ -112,6 +119,7 @@ router.post("/send", authMiddleware, async (req, res) => {
       res.json({ result: false, error: "Échec de l'envoi du mail" });
     }
   } catch (err) {
+    console.error("❌ Erreur route /invites/send:", err);
     res.status(500).json({ result: false, error: err.message });
   }
 });
