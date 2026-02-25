@@ -6,7 +6,7 @@ const Invite = require("../models/invites");
 const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
-
+const { sendResetPasswordEmail } = require("../modules/mailer");
 // ─── Créer un membre ─────────────────────────────────────────────────────────
 
 router.post("/", authMiddleware, (req, res) => {
@@ -110,7 +110,7 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
-// ─── Routes statiques (AVANT les routes dynamiques /:id) ─────────────────────
+// ─── Routes statiques  ─────────────────────
 
 // Sauvegarder le token push
 router.put("/push-token", authMiddleware, async (req, res) => {
@@ -300,7 +300,68 @@ router.post("/signin", async (req, res) => {
   }
 });
 
-// ─── Routes dynamiques (APRÈS les routes statiques) ──────────────────────────
+// ─── Forgot Password ─────────────────────────────────────────
+router.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.json({ result: false, error: "Email requis" });
+  }
+
+  try {
+    const member = await Member.findOne({ email });
+    if (!member) {
+      return res.json({ result: true });
+    }
+
+    const resetToken = uid2(32);
+    const expiration = Date.now() + 1000 * 60 * 30;
+
+    member.resetPasswordToken = resetToken;
+    member.resetPasswordExpires = expiration;
+    await member.save();
+
+    const resetLink = `https://kidsweek.app/reset-password?token=${resetToken}`;
+
+    await sendResetPasswordEmail(member.email, resetLink);
+
+    res.json({ result: true });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
+});
+
+// ─── Reset Password ─────────────────────────────────────────
+router.post("/reset-password", async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.json({ result: false, error: "Données manquantes" });
+  }
+
+  try {
+    const member = await Member.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() },
+    });
+
+    if (!member) {
+      return res.json({ result: false, error: "Token invalide ou expiré" });
+    }
+
+    const hash = bcrypt.hashSync(newPassword, 10);
+    member.password = hash;
+    member.resetPasswordToken = null;
+    member.resetPasswordExpires = null;
+    await member.save();
+
+    res.json({ result: true });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
+});
+
+// ─── Routes dynamiques ──────────────────────────
 
 // Modifier un membre
 router.put("/:memberId", authMiddleware, async (req, res) => {

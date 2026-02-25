@@ -25,6 +25,8 @@ const memberSchema = new Schema(
     zone: { type: Schema.Types.ObjectId, ref: "zones" },
     type: { type: String, enum: ["local", "auth"], default: "local" },
     token: String,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     tutorialState: {
       type: Map,
       of: Schema.Types.Mixed,
