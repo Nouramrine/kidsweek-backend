@@ -66,4 +66,17 @@ const sendInvite = async (invite) => {
   });
 };
 
-module.exports = { sendInvite };
+async function sendResetPasswordEmail(email, link) {
+  return sendMail({
+    to: email,
+    subject: "Réinitialisation de votre mot de passe",
+    html: `
+      <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+      <p>Cliquez sur le lien ci-dessous :</p>
+      <a href="${link}">${link}</a>
+      <p>Ce lien expire dans 30 minutes.</p>
+    `,
+  });
+}
+
+module.exports = { sendInvite, sendResetPasswordEmail };
