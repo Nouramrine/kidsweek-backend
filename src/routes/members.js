@@ -321,7 +321,7 @@ router.post("/forgot-password", async (req, res) => {
     member.resetPasswordExpires = expiration;
     await member.save();
 
-    const resetLink = `https://kidsweek.app/reset-password?token=${resetToken}`;
+    const resetLink = `kidsweek://reset-password?token=${resetToken}`;
 
     await sendResetPasswordEmail(member.email, resetLink);
 
