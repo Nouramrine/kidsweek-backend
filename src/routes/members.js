@@ -7,6 +7,8 @@ const { checkBody } = require("../modules/checkBody");
 const uid2 = require("uid2");
 const bcrypt = require("bcrypt");
 const { sendResetPasswordEmail } = require("../modules/mailer");
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client();
 // ─── Créer un membre ─────────────────────────────────────────────────────────
 
 router.post("/", authMiddleware, (req, res) => {
@@ -356,6 +358,55 @@ router.post("/reset-password", async (req, res) => {
     await member.save();
 
     res.json({ result: true });
+  } catch (err) {
+    res.status(500).json({ result: false, error: err.message });
+  }
+});
+
+//Connexion via google
+
+router.post("/google-auth", async (req, res) => {
+  const { idToken } = req.body;
+  if (!idToken) return res.json({ result: false, error: "Token manquant" });
+
+  try {
+    const ticket = await client.verifyIdToken({ idToken });
+    const payLoad = ticket.getPayload();
+
+    const { email, given_name: firstName, family_name: lastName } = payLoad;
+
+    let member = await Member.findOne({ email });
+
+    if (!member) {
+      member = new Member({
+        firstName,
+        lastName,
+        email,
+        type: "auth",
+        token: uid2(32),
+      });
+      await member.save();
+    }
+    if (!member.token) {
+      member.token = uid2(32);
+      await member.save();
+    }
+
+    if (!member.tutorialState) {
+      member.tutorialState = new Map([["dismissedTooltips", []]]);
+      await member.save();
+    }
+
+    res.json({
+      result: true,
+      member: {
+        firstName: member.firstName,
+        lastName: member.lastName,
+        emil: member.email,
+        token: member.token,
+        tutorialState: Object.fromEntries(member.tutorialState),
+      },
+    });
   } catch (err) {
     res.status(500).json({ result: false, error: err.message });
   }
