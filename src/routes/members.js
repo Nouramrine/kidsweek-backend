@@ -373,6 +373,8 @@ router.post("/google-auth", async (req, res) => {
     const ticket = await client.verifyIdToken({ idToken });
     const payLoad = ticket.getPayload();
 
+    console.log("Google payload:", payload);
+
     const { email, given_name: firstName, family_name: lastName } = payLoad;
 
     let member = await Member.findOne({ email });
