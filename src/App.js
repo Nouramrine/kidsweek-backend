@@ -41,15 +41,14 @@ app.use((req, res, next) => {
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.use("/members", membersRouter);
 app.use("/activities", activitiesRouter);
 app.use("/zones", zonesRouter);
 app.use("/invites", invitesRouter);
-
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
 
 app.get("/", (req, res) => {
   res.send("API is running...");
