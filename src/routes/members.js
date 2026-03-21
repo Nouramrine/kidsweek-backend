@@ -370,10 +370,14 @@ router.post("/google-auth", async (req, res) => {
   if (!idToken) return res.json({ result: false, error: "Token manquant" });
 
   try {
-    const ticket = await client.verifyIdToken({ idToken });
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience:
+        "803261479896-rjr0gfd2gfmumv9aqrdfuai7k2m1i11q.apps.googleusercontent.com",
+    });
     const payLoad = ticket.getPayload();
 
-    console.log("Google payload:", payload);
+    console.log("Google payload:", payLoad);
 
     const { email, given_name: firstName, family_name: lastName } = payLoad;
 
@@ -404,7 +408,7 @@ router.post("/google-auth", async (req, res) => {
       member: {
         firstName: member.firstName,
         lastName: member.lastName,
-        emil: member.email,
+        email: member.email,
         token: member.token,
         tutorialState: Object.fromEntries(member.tutorialState),
       },
