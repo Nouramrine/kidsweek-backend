@@ -47,6 +47,14 @@ app.use("/activities", activitiesRouter);
 app.use("/zones", zonesRouter);
 app.use("/invites", invitesRouter);
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+app.get("/", (req, res) => {
+  res.send("API is running...");
+});
+
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
