@@ -392,6 +392,8 @@ router.post("/google-auth", async (req, res) => {
         token: uid2(32),
       });
       await member.save();
+      member.authorizations = [{ member: member._id, level: "admin" }];
+      await member.save();
     }
     if (!member.token) {
       member.token = uid2(32);
