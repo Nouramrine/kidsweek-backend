@@ -278,12 +278,34 @@ router.post("/signin", async (req, res) => {
   }
 
   try {
-    const data = await Member.findOne({ email: req.body.email });
+    const { email, password, inviteToken } = req.body;
+    const data = await Member.findOne({ email });
 
-    if (data && bcrypt.compareSync(req.body.password, data.password)) {
+    if (data && bcrypt.compareSync(password, data.password)) {
       if (!data.tutorialState) {
         data.tutorialState = new Map([["dismissedTooltips", []]]);
         await data.save();
+      }
+
+      if (inviteToken) {
+        const invite = await Invite.findOne({
+          token: inviteToken,
+          status: "pending",
+        });
+        if (invite) {
+          invite.invited = data._id;
+          invite.status = "accepted";
+          await invite.save();
+
+          if (
+            !data.authorizations.some(
+              (a) => a.member.toString() === data._id.toString(),
+            )
+          ) {
+            data.authorizations.push({ member: data._id, level: "admin" });
+            await data.save();
+          }
+        }
       }
 
       const memberData = {
