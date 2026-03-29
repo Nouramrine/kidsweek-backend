@@ -253,6 +253,11 @@ router.post("/signup", async (req, res) => {
         token: uid2(32),
       });
       savedMember = await newMember.save();
+
+      savedMember.authorizations = [
+        { member: savedMember._id, level: "admin" },
+      ];
+      await savedMember.save();
     }
 
     const {
@@ -398,8 +403,6 @@ router.post("/google-auth", async (req, res) => {
         "803261479896-rjr0gfd2gfmumv9aqrdfuai7k2m1i11q.apps.googleusercontent.com",
     });
     const payLoad = ticket.getPayload();
-
-    console.log("Google payload:", payLoad);
 
     const { email, given_name: firstName, family_name: lastName } = payLoad;
 

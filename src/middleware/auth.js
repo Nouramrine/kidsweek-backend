@@ -13,6 +13,12 @@ async function authMiddleware(req, res, next) {
       token = token.slice(7).trim();
     }
 
+    if (!token) {
+      return res
+        .status(401)
+        .json({ result: false, message: "Token manquant !" });
+    }
+
     //recherche du membre correspondant au token
     const member = await Member.findOne({ token: token });
     if (!member) {
