@@ -69,13 +69,26 @@ const sendInvite = async (invite) => {
 async function sendResetPasswordEmail(email, link) {
   return sendMail({
     to: email,
-    subject: "Réinitialisation de votre mot de passe",
+    subject: "Réinitialisation de votre mot de passe KidsWeek",
     html: `
-      <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
-      <p>Cliquez sur le lien ci-dessous :</p>
-      <a href="${link}">${link}</a>
-      <p>Ce lien expire dans 30 minutes.</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border-radius: 8px; border: 1px solid #eee;">
+        <h2 style="color: #4A90D9;">Réinitialisation de votre mot de passe 🔐</h2>
+        <p>Bonjour,</p>
+        <p>Vous avez demandé la réinitialisation de votre mot de passe <strong>KidsWeek</strong>.</p>
+        <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${link}"
+             style="background-color: #4A90D9; color: white; padding: 14px 28px;
+                    border-radius: 6px; text-decoration: none; font-size: 16px; font-weight: bold;">
+            Réinitialiser mon mot de passe
+          </a>
+        </div>
+        <p style="color: #999; font-size: 12px;">
+          Ce lien est valable 30 minutes. Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer ce mail.
+        </p>
+      </div>
     `,
+    text: `Vous avez demandé la réinitialisation de votre mot de passe KidsWeek. Rendez-vous sur : ${link}. Ce lien expire dans 30 minutes.`,
   });
 }
 
